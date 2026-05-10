@@ -1,3 +1,6 @@
+using AvalonPizza.Server.Interfaces;
+using AvalonPizza.Server.Repositories;
+
 namespace AvalonPizza.Server;
 
 public class Program
@@ -13,7 +16,8 @@ public class Program
         builder.Services.AddControllers();
 
 
-
+        // Dependency Injection
+        builder.Services.AddScoped<IPizzaRepository, PizzaRepository>();
 
 
         var app = builder.Build();

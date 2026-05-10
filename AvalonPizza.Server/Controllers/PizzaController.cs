@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 
 namespace AvalonPizza.Server.Controllers;
 
@@ -7,17 +9,24 @@ namespace AvalonPizza.Server.Controllers;
 [Route("api/[controller]")]
 public class PizzaController : ControllerBase
 {
-    private static int _nextId = 1; // Counter for unique IDs
-    // This 'static' list stays in memory as long as the app is running
-    private static List<PizzaOrder> _orders = new List<PizzaOrder>();
+    private readonly IPizzaRepository _pizzaRepo;
 
-    // 1. POST: Add a new order to the list
+    public PizzaController(IPizzaRepository pizzaRepo)
+    {
+        _pizzaRepo = pizzaRepo;
+    }
+
+    [HttpGet("status")]
+    public IActionResult GetStatus()
+    {
+        bool isAlive = _pizzaRepo.CheckConnection();
+        return isAlive ? Ok("Healthy") : StatusCode(503, new { status = "Unhealthy", database = "Database Offline" });
+    }
+
+    // POST: Add a new order to the list
     [HttpPost]
     public IActionResult PlaceOrder([FromBody] PizzaOrder order)
     {
-        order.Id = _nextId++; // Assign unique ID
-
-        // 1. Calculate Base Price based on Size
         decimal basePrice = order.Size switch
         {
             "Small" => 8.00m,
@@ -25,15 +34,28 @@ public class PizzaController : ControllerBase
             "Large" => 12.00m,
             _ => 0m
         };
-
-        // 2. Calculate Topping Price ($1.50 per topping)
         decimal toppingPrice = order.Toppings.Count * 1.50m;
-
-        // 3. Set the total price
         order.Price = basePrice + toppingPrice;
 
-        // 4. Save to our in-memory list
-        _orders.Add(order);
+
+        try
+        {
+            _pizzaRepo.Add(order);
+        }
+        catch (SqlException ex)
+        {
+            // Log the error here (ex.Message)
+            return StatusCode(503, new
+            {
+                message = "Database is currently unavailable. Please try again later.",
+                code = ex.Number // SQL Error numbers are helpful for debugging
+            });
+        }
+        catch (Exception)
+        {
+            return BadRequest(new { message = "Something went wrong with your order." });
+        }
+
 
         return Ok(new
         {
@@ -47,7 +69,7 @@ public class PizzaController : ControllerBase
     [HttpGet]
     public IActionResult GetAllOrders()
     {
-        return Ok(_orders); // ASP.NET Core automatically converts the List to JSON
+        return Ok(_pizzaRepo.GetAll());
     }
 
     // [UPDATE] - PUT: api/pizza/1
