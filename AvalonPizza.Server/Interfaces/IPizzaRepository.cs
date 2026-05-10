@@ -4,9 +4,9 @@ namespace AvalonPizza.Server.Interfaces;
 
 public interface IPizzaRepository
 {
-    void Add(PizzaOrder order);
-    IEnumerable<object> GetAll();
-    bool CheckConnection();
-    void Update(int id, PizzaOrder order);
-    void Delete(int id);
+    Task AddAsync(PizzaOrder order);
+    Task<IEnumerable<object>> GetAllAsync();
+    Task UpdateAsync(int id, PizzaOrder order);
+    Task DeleteAsync(int id);
+    Task<bool> CheckConnectionAsync();
 }

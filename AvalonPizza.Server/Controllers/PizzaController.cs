@@ -16,16 +16,9 @@ public class PizzaController : ControllerBase
         _pizzaRepo = pizzaRepo;
     }
 
-    [HttpGet("status")]
-    public IActionResult GetStatus()
-    {
-        bool isAlive = _pizzaRepo.CheckConnection();
-        return isAlive ? Ok("Healthy") : StatusCode(503, new { status = "Unhealthy", database = "Database Offline" });
-    }
-
     // POST: Add a new order to the list
     [HttpPost]
-    public IActionResult PlaceOrder([FromBody] PizzaOrder order)
+    public async Task<IActionResult> PlaceOrder([FromBody] PizzaOrder order)
     {
         decimal basePrice = order.Size switch
         {
@@ -40,7 +33,7 @@ public class PizzaController : ControllerBase
 
         try
         {
-            _pizzaRepo.Add(order);
+            await _pizzaRepo.AddAsync(order);
         }
         catch (SqlException ex)
         {
@@ -67,28 +60,35 @@ public class PizzaController : ControllerBase
 
     // GET: Retrieve all orders
     [HttpGet]
-    public IActionResult GetAllOrders()
+    public async Task<IActionResult> GetAllOrders()
     {
-        return Ok(_pizzaRepo.GetAll());
+        return Ok(await _pizzaRepo.GetAllAsync());
     }
 
     // [UPDATE] - PUT: api/pizza/1
     [HttpPut("{id}")]
-    public IActionResult UpdateOrder(int id, [FromBody] PizzaOrder order)
+    public async Task<IActionResult> UpdateOrder(int id, [FromBody] PizzaOrder order)
     {
         // Re-calculate the price based on updated info
         decimal basePrice = order.Size == "Small" ? 8 : (order.Size == "Medium" ? 10 : 12);
         order.Price = basePrice + (order.Toppings.Count * 1.50m);
 
-        _pizzaRepo.Update(id, order);
+        await _pizzaRepo.UpdateAsync(id, order);
         return Ok(new { message = $"Order {id} updated successfully!" });
     }
 
     // [DELETE] - DELETE: api/pizza/1
     [HttpDelete("{id}")]
-    public IActionResult CancelOrder(int id)
+    public async Task<IActionResult> CancelOrder(int id)
     {
-        _pizzaRepo.Delete(id);
+        await _pizzaRepo.DeleteAsync(id);
         return Ok(new { message = $"Order {id} deleted." });
+    }
+
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        bool isAlive = await _pizzaRepo.CheckConnectionAsync();
+        return isAlive ? Ok("Healthy") : StatusCode(503, new { status = "Unhealthy", database = "Database Offline" });
     }
 }

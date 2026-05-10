@@ -16,7 +16,7 @@ public class PizzaRepository : IPizzaRepository
     }
 
     // [CREATE]
-    public void Add(PizzaOrder order)
+    public async Task AddAsync(PizzaOrder order)
     {
         using var conn = new SqlConnection(_connectionString);
         // Dapper maps the 'order' object properties to @Size, @Toppings, etc. automatically!
@@ -27,19 +27,19 @@ public class PizzaRepository : IPizzaRepository
             Price = order.Price
         };
 
-        conn.Execute("AddPizza", parameters, commandType: CommandType.StoredProcedure);
+        await conn.ExecuteAsync("AddPizza", parameters, commandType: CommandType.StoredProcedure);
     }
 
     // [READ]
-    public IEnumerable<object> GetAll()
+    public async Task<IEnumerable<object>> GetAllAsync()
     {
         using var conn = new SqlConnection(_connectionString);
         // Dapper runs the procedure and returns a collection of objects
-        return conn.Query("GetPizzas", commandType: CommandType.StoredProcedure);
+        return await conn.QueryAsync("GetPizzas", commandType: CommandType.StoredProcedure);
     }
 
     // [UPDATE]
-    public void Update(int id, PizzaOrder order)
+    public async Task UpdateAsync(int id, PizzaOrder order)
     {
         using var conn = new SqlConnection(_connectionString);
         var parameters = new
@@ -49,23 +49,22 @@ public class PizzaRepository : IPizzaRepository
             Toppings = string.Join(", ", order.Toppings),
             Price = order.Price
         };
-
-        conn.Execute("UpdatePizza", parameters, commandType: CommandType.StoredProcedure);
+        await conn.ExecuteAsync("UpdatePizza", parameters, commandType: CommandType.StoredProcedure);
     }
 
     // [DELETE]
-    public void Delete(int id)
+    public async Task DeleteAsync(int id)
     {
         using var conn = new SqlConnection(_connectionString);
-        conn.Execute("DeletePizza", new { Id = id }, commandType: CommandType.StoredProcedure);
+        await conn.ExecuteAsync("DeletePizza", new { Id = id }, commandType: CommandType.StoredProcedure);
     }
 
-    public bool CheckConnection()
+    public async Task<bool> CheckConnectionAsync()
     {
         try
         {
             using var conn = new SqlConnection(_connectionString);
-            return conn.ExecuteScalar<int>("SELECT 1") == 1;
+            return await conn.ExecuteScalarAsync<int>("SELECT 1") == 1;
         }
         catch { return false; }
     }
