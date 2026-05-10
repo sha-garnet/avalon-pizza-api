@@ -74,30 +74,21 @@ public class PizzaController : ControllerBase
 
     // [UPDATE] - PUT: api/pizza/1
     [HttpPut("{id}")]
-    public IActionResult UpdateOrder(int id, [FromBody] PizzaOrder updatedOrder)
+    public IActionResult UpdateOrder(int id, [FromBody] PizzaOrder order)
     {
-        var existingOrder = _orders.FirstOrDefault(o => o.Id == id);
-        if (existingOrder == null) return NotFound("Order not found.");
+        // Re-calculate the price based on updated info
+        decimal basePrice = order.Size == "Small" ? 8 : (order.Size == "Medium" ? 10 : 12);
+        order.Price = basePrice + (order.Toppings.Count * 1.50m);
 
-        // Update details
-        existingOrder.Size = updatedOrder.Size;
-        existingOrder.Toppings = updatedOrder.Toppings;
-
-        // Recalculate price
-        decimal basePrice = existingOrder.Size == "Small" ? 8 : (existingOrder.Size == "Medium" ? 10 : 12);
-        existingOrder.Price = basePrice + (existingOrder.Toppings.Count * 1.50m);
-
-        return Ok(new { message = "Order updated!", order = existingOrder });
+        _pizzaRepo.Update(id, order);
+        return Ok(new { message = $"Order {id} updated successfully!" });
     }
 
     // [DELETE] - DELETE: api/pizza/1
     [HttpDelete("{id}")]
     public IActionResult CancelOrder(int id)
     {
-        var order = _orders.FirstOrDefault(o => o.Id == id);
-        if (order == null) return NotFound();
-
-        _orders.Remove(order);
-        return Ok($"Order {id} has been canceled.");
+        _pizzaRepo.Delete(id);
+        return Ok(new { message = $"Order {id} deleted." });
     }
 }

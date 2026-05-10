@@ -44,3 +44,26 @@ BEGIN
     SELECT Id, Size, Toppings, Price FROM Pizzas;
 END
 GO
+
+-- Create the 'UpdatePizza' Stored Procedure
+CREATE OR ALTER PROCEDURE [dbo].[UpdatePizza]
+    @Id INT,
+    @Size NVARCHAR(50),
+    @Toppings NVARCHAR(MAX),
+    @Price DECIMAL(18,2)
+AS
+BEGIN
+    UPDATE Pizzas 
+    SET Size = @Size, Toppings = @Toppings, Price = @Price
+    WHERE Id = @Id;
+END
+GO
+
+-- Create the 'DeletePizza' Stored Procedure
+CREATE OR ALTER PROCEDURE [dbo].[DeletePizza]
+    @Id INT
+AS
+BEGIN
+    DELETE FROM Pizzas WHERE Id = @Id;
+END
+GO
