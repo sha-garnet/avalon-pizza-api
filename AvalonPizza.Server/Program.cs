@@ -9,10 +9,13 @@ namespace AvalonPizza.Server;
 
 public class Program
 {
+    private const string PizzaPolicy = "PizzaFrontendPolicy";
+
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Logging
         var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
         // Configure Serilog
         Log.Logger = new LoggerConfiguration()
@@ -21,6 +24,21 @@ public class Program
         .CreateLogger();
         // Tell ASP.NET Core to use Serilog
         builder.Host.UseSerilog();
+
+        // CORS
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? Array.Empty<string>();
+        // Define the CORS policy
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(PizzaPolicy, policy =>
+            {
+                policy.WithOrigins(allowedOrigins)
+                      .AllowAnyHeader() // This allows use custom headers (like Authorization tokens)
+                      .AllowAnyMethod(); // This allows GET, POST, PUT, and DELETE
+            });
+        });
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -35,6 +53,7 @@ public class Program
 
         var app = builder.Build();
 
+        // Global Error Handling
         // Placed near the top (before app.MapControllers().). It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
         // If anything below it fails, your "net" will catch it. This "net" catches any unhandled errors in your API. Relyin on our global middleware
         app.Use(async (context, next) =>
@@ -60,6 +79,9 @@ public class Program
 
         // This runs every time you hit 'Start' in Visual Studio
         DbInitializer.Initialize(connectionString);
+
+        // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
+        app.UseCors(PizzaPolicy);
 
         app.MapGet("/", () => new { message = "AVALON PIZZA API!" });
 
