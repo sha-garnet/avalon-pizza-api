@@ -1,5 +1,6 @@
 ﻿using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Models;
+using AvalonPizza.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Serilog.Core;
@@ -10,11 +11,16 @@ namespace AvalonPizza.Server.Controllers;
 [Route("api/[controller]")]
 public class PizzaController : ControllerBase
 {
+    private readonly IPizzaService _pizzaService;
     private readonly IPizzaRepository _pizzaRepo;
     private readonly ILogger<PizzaController> _logger;
 
-    public PizzaController(IPizzaRepository pizzaRepo, ILogger<PizzaController> logger)
+    public PizzaController(
+        IPizzaService pizzaService,
+        IPizzaRepository pizzaRepo,
+        ILogger<PizzaController> logger)
     {
+        _pizzaService = pizzaService;
         _pizzaRepo = pizzaRepo;
         _logger = logger;
     }
@@ -23,44 +29,16 @@ public class PizzaController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> PlaceOrder([FromBody] PizzaOrder order)
     {
-        decimal basePrice = order.Size switch
-        {
-            "Small" => 8.00m,
-            "Medium" => 10.00m,
-            "Large" => 12.00m,
-            _ => 0m
-        };
-        decimal toppingPrice = order.Toppings.Count * 1.50m;
-        order.Price = basePrice + toppingPrice;
 
+        _logger.LogInformation("Received a new order request for a {Size} pizza.", order.Size);
 
-        try
-        {
-            _logger.LogInformation("Received a new order request for a {Size} pizza.", order.Size);
-            await _pizzaRepo.AddAsync(order);
-        }
-        catch (SqlException ex)
-        {
-            _logger.LogError(ex, "Database is currently unavailable. Please try again later.");
-            // Log the error here (ex.Message)
-            return StatusCode(503, new
-            {
-                message = "Database is currently unavailable. Please try again later.",
-                code = ex.Number // SQL Error numbers are helpful for debugging
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Something went wrong with your order.");
-            return BadRequest(new { message = "Something went wrong with your order." });
-        }
-
+        var processedOrder = await _pizzaService.ProcessOrderAsync(order);
 
         return Ok(new
         {
             message = "Order Placed!",
-            totalPrice = order.Price.ToString("C"), // Formats as currency like $13.50
-            orderDetails = order
+            totalPrice = processedOrder.Price.ToString("C"), // Formats as currency like $13.50
+            orderDetails = processedOrder
         });
     }
 
@@ -68,7 +46,8 @@ public class PizzaController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllOrders()
     {
-        return Ok(await _pizzaRepo.GetAllAsync());
+        var orders = await _pizzaService.GetAllOrdersAsync();
+        return Ok(orders);
     }
 
     // [UPDATE] - PUT: api/pizza/1
@@ -87,8 +66,8 @@ public class PizzaController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> CancelOrder(int id)
     {
-        await _pizzaRepo.DeleteAsync(id);
-        return Ok(new { message = $"Order {id} deleted." });
+        await _pizzaService.CancelOrderAsync(id);
+        return Ok(new { message = $"Order {id} has been cancelled." });
     }
 
     [HttpGet("status")]

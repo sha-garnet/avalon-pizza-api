@@ -1,5 +1,6 @@
 using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Repositories;
+using AvalonPizza.Server.Services;
 using Microsoft.Data.SqlClient;
 using Serilog;
 
@@ -28,6 +29,7 @@ public class Program
 
         // Dependency Injection list
         builder.Services.AddScoped<IPizzaRepository, PizzaRepository>();
+        builder.Services.AddScoped<IPizzaService, PizzaService>();
 
         var app = builder.Build();
 
