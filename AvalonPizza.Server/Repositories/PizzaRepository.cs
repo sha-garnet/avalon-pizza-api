@@ -19,7 +19,6 @@ public class PizzaRepository : IPizzaRepository
     public async Task AddAsync(PizzaOrder order)
     {
         using var conn = new SqlConnection(_connectionString);
-        // Dapper maps the 'order' object properties to @Size, @Toppings, etc. automatically!
         var parameters = new
         {
             order.Size,
@@ -55,7 +54,10 @@ public class PizzaRepository : IPizzaRepository
     public async Task DeleteAsync(int id)
     {
         using var conn = new SqlConnection(_connectionString);
-        await conn.ExecuteAsync("DeletePizza", new { Id = id }, commandType: CommandType.StoredProcedure);
+        await conn.ExecuteAsync("DeletePizza", new
+        {
+            Id = id
+        }, commandType: CommandType.StoredProcedure);
     }
 
     public async Task<bool> CheckConnectionAsync()
