@@ -1,5 +1,6 @@
 using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Repositories;
+using Serilog;
 
 namespace AvalonPizza.Server;
 
@@ -8,6 +9,14 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // Configure Serilog
+         Log.Logger = new LoggerConfiguration()
+        .WriteTo.Console()
+        .WriteTo.File(path: @"C:\temp\log\pizza_api_.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+        .CreateLogger();
+
+        builder.Host.UseSerilog(); // Tell ASP.NET Core to use Serilog
 
         string connectionString = "Server=(localdb)\\mssqllocaldb;Database=PizzaStoreDb;Trusted_Connection=True;TrustServerCertificate=True;";
         builder.Services.AddSingleton(connectionString);
@@ -32,6 +41,8 @@ public class Program
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "An unhandled exception occurred during request {Path}", context.Request.Path);
+
                 context.Response.StatusCode = 500;
                 context.Response.ContentType = "application/json";
 

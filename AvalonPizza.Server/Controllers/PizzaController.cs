@@ -2,6 +2,7 @@
 using AvalonPizza.Server.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Serilog.Core;
 
 namespace AvalonPizza.Server.Controllers;
 
@@ -10,10 +11,12 @@ namespace AvalonPizza.Server.Controllers;
 public class PizzaController : ControllerBase
 {
     private readonly IPizzaRepository _pizzaRepo;
+    private readonly ILogger<PizzaController> _logger;
 
-    public PizzaController(IPizzaRepository pizzaRepo)
+    public PizzaController(IPizzaRepository pizzaRepo, ILogger<PizzaController> logger)
     {
         _pizzaRepo = pizzaRepo;
+        _logger = logger;
     }
 
     // POST: Add a new order to the list
@@ -33,10 +36,12 @@ public class PizzaController : ControllerBase
 
         try
         {
+            _logger.LogInformation("Received a new order request for a {Size} pizza.", order.Size);
             await _pizzaRepo.AddAsync(order);
         }
         catch (SqlException ex)
         {
+            _logger.LogError(ex, "Database is currently unavailable. Please try again later.");
             // Log the error here (ex.Message)
             return StatusCode(503, new
             {
@@ -44,8 +49,9 @@ public class PizzaController : ControllerBase
                 code = ex.Number // SQL Error numbers are helpful for debugging
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Something went wrong with your order.");
             return BadRequest(new { message = "Something went wrong with your order." });
         }
 

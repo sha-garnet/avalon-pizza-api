@@ -1,8 +1,8 @@
 ﻿using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Models;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using Dapper;
 
 namespace AvalonPizza.Server.Repositories;
 
@@ -22,9 +22,9 @@ public class PizzaRepository : IPizzaRepository
         // Dapper maps the 'order' object properties to @Size, @Toppings, etc. automatically!
         var parameters = new
         {
-            Size = order.Size,
+            order.Size,
             Toppings = string.Join(", ", order.Toppings),
-            Price = order.Price
+            order.Price
         };
 
         await conn.ExecuteAsync("AddPizza", parameters, commandType: CommandType.StoredProcedure);
@@ -34,7 +34,6 @@ public class PizzaRepository : IPizzaRepository
     public async Task<IEnumerable<object>> GetAllAsync()
     {
         using var conn = new SqlConnection(_connectionString);
-        // Dapper runs the procedure and returns a collection of objects
         return await conn.QueryAsync("GetPizzas", commandType: CommandType.StoredProcedure);
     }
 
@@ -45,9 +44,9 @@ public class PizzaRepository : IPizzaRepository
         var parameters = new
         {
             Id = id,
-            Size = order.Size,
+            order.Size,
             Toppings = string.Join(", ", order.Toppings),
-            Price = order.Price
+            order.Price
         };
         await conn.ExecuteAsync("UpdatePizza", parameters, commandType: CommandType.StoredProcedure);
     }
@@ -66,6 +65,9 @@ public class PizzaRepository : IPizzaRepository
             using var conn = new SqlConnection(_connectionString);
             return await conn.ExecuteScalarAsync<int>("SELECT 1") == 1;
         }
-        catch { return false; }
+        catch
+        {
+            return false;
+        }
     }
 }
