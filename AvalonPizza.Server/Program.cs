@@ -76,6 +76,8 @@ public class Program
     {
         public static void Initialize(string connectionString)
         {
+            Log.Information("Database initialization started using master catalog.");
+
             string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "InitializeDb.sql");
             if (!File.Exists(scriptPath))
             {
@@ -97,7 +99,8 @@ public class Program
                 conn.Open();
 
                 // SQL scripts with 'GO' commands need to be split because
-                // ADO.NET doesn't understand the 'GO' keyword                
+                // Splitting SQL scripts by the word "GO" is tricky because "GO" can appear inside words like CATEGORY, DOG, or within comments
+                // ADO.NET doesn't understand the 'GO' keyword
                 string pattern = @"^\s*GO\s*$";
                 var batches = Regex.Split(script, pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
@@ -111,6 +114,8 @@ public class Program
                         cmd.ExecuteNonQuery();
                     }
                 }
+
+                Log.Information("Database initialization completed successfully.");
             }
         }
     }
