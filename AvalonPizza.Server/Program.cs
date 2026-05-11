@@ -3,6 +3,7 @@ using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.Data.SqlClient;
 using Serilog;
+using System.Text.RegularExpressions;
 
 namespace AvalonPizza.Server;
 
@@ -12,16 +13,17 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
         // Configure Serilog
-         Log.Logger = new LoggerConfiguration()
+        Log.Logger = new LoggerConfiguration()
         .WriteTo.Console()
-        .WriteTo.File(path: @"C:\temp\log\pizza_api_.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
+        .WriteTo.File(path: logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
         .CreateLogger();
         // Tell ASP.NET Core to use Serilog
         builder.Host.UseSerilog();
 
-        string connectionString = "Server=(localdb)\\mssqllocaldb;Database=PizzaStoreDb;Trusted_Connection=True;TrustServerCertificate=True;";
-        
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         builder.Services.AddSingleton(connectionString);
 
         // Add services to the container.
@@ -33,7 +35,7 @@ public class Program
 
         var app = builder.Build();
 
-        // Placed near the top. It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
+        // Placed near the top (before app.MapControllers().). It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
         // If anything below it fails, your "net" will catch it. This "net" catches any unhandled errors in your API. Relyin on our global middleware
         app.Use(async (context, next) =>
         {
@@ -74,9 +76,6 @@ public class Program
     {
         public static void Initialize(string connectionString)
         {
-            // First, connect to 'master' to ensure the database exists
-            var masterConnection = "Server=(localdb)\\mssqllocaldb;Database=master;Trusted_Connection=True;TrustServerCertificate=True;";
-
             string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "InitializeDb.sql");
             if (!File.Exists(scriptPath))
             {
@@ -84,19 +83,30 @@ public class Program
             }
             var script = File.ReadAllText(scriptPath);
 
+            // First, connect to 'master' to ensure the database exists
+            var builder = new SqlConnectionStringBuilder(connectionString)
+            {
+                // You cannot create a database called AvalonPizza while you are connected to AvalonPizza.
+                // You have to connect to master first to run the CREATE DATABASE command.
+                InitialCatalog = "master"
+            };
+            var masterConnection = builder.ConnectionString;
+
             using (var conn = new SqlConnection(masterConnection))
             {
                 conn.Open();
 
                 // SQL scripts with 'GO' commands need to be split because
-                // ADO.NET doesn't understand the 'GO' keyword.
-                var batches = script.Split(new[] { "GO" }, StringSplitOptions.RemoveEmptyEntries);
+                // ADO.NET doesn't understand the 'GO' keyword                
+                string pattern = @"^\s*GO\s*$";
+                var batches = Regex.Split(script, pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
                 foreach (var batch in batches)
                 {
-                    if (string.IsNullOrWhiteSpace(batch)) continue;
+                    string trimmedBatch = batch.Trim();
+                    if (string.IsNullOrWhiteSpace(trimmedBatch)) continue;
 
-                    using (var cmd = new SqlCommand(batch, conn))
+                    using (var cmd = new SqlCommand(trimmedBatch, conn))
                     {
                         cmd.ExecuteNonQuery();
                     }
