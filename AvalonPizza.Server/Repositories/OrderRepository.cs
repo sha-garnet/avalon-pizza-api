@@ -34,60 +34,28 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
-    //// [CREATE]
-    //public async Task AddAsync(Order order)
-    //{
-    //    using var conn = new SqlConnection(_connectionString);
-    //    var parameters = new
-    //    {
-    //        order.Size,
-    //        Toppings = string.Join(", ", order.Toppings),
-    //        order.Price
-    //    };
-    //    await conn.ExecuteAsync("AddPizza", parameters, commandType: CommandType.StoredProcedure);
-    //}
+    public async Task<int> CreateOrderAsync(Order order)
+    {
+        var toppingDataTable = new DataTable();
+        toppingDataTable.Columns.Add("ToppingId", typeof(int));
 
-    //// [READ]
-    //public async Task<IEnumerable<object>> GetAllAsync()
-    //{
-    //    using var conn = new SqlConnection(_connectionString);
-    //    return await conn.QueryAsync("GetPizzas", commandType: CommandType.StoredProcedure);
-    //}
+        foreach (var topping in order.Toppings)
+        {
+            toppingDataTable.Rows.Add(topping.ToppingId);
+        }
 
-    //// [UPDATE]
-    //public async Task UpdateAsync(Order order)
-    //{
-    //    using var conn = new SqlConnection(_connectionString);
-    //    var parameters = new
-    //    {
-    //        order.Id,
-    //        order.Size,
-    //        Toppings = string.Join(", ", order.Toppings),
-    //        order.Price
-    //    };
-    //    await conn.ExecuteAsync("UpdatePizza", parameters, commandType: CommandType.StoredProcedure);
-    //}
+        var parameters = new DynamicParameters();
+        parameters.Add("@CustomerName", order.CustomerName);
+        parameters.Add("@PhoneNumber", order.PhoneNumber);
+        parameters.Add("@DeliveryAddress", order.DeliveryAddress);
+        parameters.Add("@SizeId", order.SizeId);
+        parameters.Add("@TotalPrice", order.TotalPrice);
+        parameters.Add("@Toppings", toppingDataTable.AsTableValuedParameter("dbo.ToppingListType"));
 
-    //// [DELETE]
-    //public async Task DeleteAsync(int id)
-    //{
-    //    using var conn = new SqlConnection(_connectionString);
-    //    await conn.ExecuteAsync("DeletePizza", new
-    //    {
-    //        Id = id
-    //    }, commandType: CommandType.StoredProcedure);
-    //}
+        using var connection = new SqlConnection(_connectionString);
 
-    //public async Task<bool> CheckConnectionAsync()
-    //{
-    //    try
-    //    {
-    //        using var conn = new SqlConnection(_connectionString);
-    //        return await conn.ExecuteScalarAsync<int>("SELECT 1") == 1;
-    //    }
-    //    catch
-    //    {
-    //        return false;
-    //    }
-    //}
+        return await connection.QuerySingleAsync<int>(
+            "usp_Orders_Insert", parameters, commandType: CommandType.StoredProcedure
+        );
+    }
 }

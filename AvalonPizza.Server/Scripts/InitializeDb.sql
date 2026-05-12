@@ -83,6 +83,12 @@ BEGIN
 END
 GO
 
+-- Topping Type - User-Defined Table Type (UDTT)
+IF NOT EXISTS (SELECT * FROM sys.types WHERE name = 'ToppingListType' AND is_table_type = 1)
+BEGIN
+    CREATE TYPE [dbo].[ToppingListType] AS TABLE ([ToppingId] INT);
+END
+
 -- The Junction Table
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[OrderToppings]') AND type in (N'U'))
 BEGIN
@@ -151,6 +157,7 @@ GO
 -- =============================================
 GO
 
+-- Get order by Id
 CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_GetById]
     @Id INT
 AS
@@ -177,9 +184,62 @@ BEGIN
     SELECT
         t.[ToppingId],
         t.[ToppingName],
-        t.[Price]
+        t.[ToppingPrice]
     FROM [dbo].[OrderToppings] ot
     INNER JOIN [dbo].[Toppings] t ON ot.[ToppingId] = t.[ToppingId]
     WHERE ot.[OrderId] = @Id;
+END
+GO
+
+-- Create Order
+CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_Insert]
+    @CustomerName    NVARCHAR(100),
+    @PhoneNumber     NVARCHAR(20),
+    @DeliveryAddress NVARCHAR(500),
+    @SizeId          INT,
+    @TotalPrice      DECIMAL(18,2),
+    @Toppings        [dbo].[ToppingListType] READONLY -- Our list of IDs
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        INSERT INTO [dbo].[Orders] (
+            [CustomerName],
+            [PhoneNumber],
+            [DeliveryAddress],
+            [SizeId],
+            [TotalPrice],
+            [StatusId],
+            [IsActive]
+        )
+        VALUES (
+            @CustomerName,
+            @PhoneNumber,
+            @DeliveryAddress,
+            @SizeId,
+            @TotalPrice,
+            1,
+            1
+        );
+
+        -- Capture the New Order ID
+        DECLARE @NewOrderId INT = SCOPE_IDENTITY();
+
+        INSERT INTO [dbo].[OrderToppings] ([OrderId], [ToppingId])
+        SELECT @NewOrderId, [ToppingId]
+        FROM @Toppings;
+
+        COMMIT TRANSACTION;
+
+        -- Return the ID so the API knows the Order Number
+        SELECT @NewOrderId AS NewOrderId;
+
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
 END
 GO
