@@ -6,20 +6,20 @@ using System.Data;
 
 namespace AvalonPizza.Server.Repositories;
 
-public class ToppingRepository : IToppingRepository
+public class PizzaSizeRepository : IPizzaSize
 {
     private readonly string _connectionString;
 
-    public ToppingRepository(string connectionString)
+    public PizzaSizeRepository(string connectionString)
     {
         _connectionString = connectionString;
     }
 
-    public async Task<IEnumerable<Topping>> GetAllToppingsAsync()
+    public async Task<IEnumerable<PizzaSize>> GetAllAsync()
     {
         using var connection = new SqlConnection(_connectionString);
-        return await connection.QueryAsync<Topping>(
-            "usp_Toppings_GetAll", commandType: CommandType.StoredProcedure
+        return await connection.QueryAsync<PizzaSize>(
+            "usp_PizzaSizes_GetAll", commandType: CommandType.StoredProcedure
         );
     }
 }
