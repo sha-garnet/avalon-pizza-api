@@ -18,16 +18,23 @@ public class OrderRepository : IOrderRepository
     public async Task<Order?> GetOrderByIdAsync(int id)
     {
         using var connection = new SqlConnection(_connectionString);
+        // By opening it once at the start "Explicitly", you keep the connection open for the entire
+        // "session" of that method, which is slightly more efficient for multiple result sets.
+        // you ensure the connection is pulled from the pool and stays active for both the Order and the Toppings retrieval.
+        // This prevents "connection toggling."
+        await connection.OpenAsync();
 
-        using var multi = await connection.QueryMultipleAsync(
+        using var reader = await connection.QueryMultipleAsync(
             "usp_Orders_GetById", new { Id = id }, commandType: CommandType.StoredProcedure
         );
 
-        var order = await multi.ReadSingleOrDefaultAsync<Order>();
+        var order = await reader.ReadSingleOrDefaultAsync<Order>();
 
-        if (order != null)
+        // safety check provided by Dapper. It ensures you don't try to read from the result stream
+        // if it has already been closed or exhausted, which prevents runtime crashes.
+        if (order != null && !reader.IsConsumed)
         {
-            var toppings = await multi.ReadAsync<Topping>();
+            var toppings = await reader.ReadAsync<Topping>();
             order.Toppings = toppings.ToList();
         }
 
@@ -36,7 +43,8 @@ public class OrderRepository : IOrderRepository
 
     public async Task<int> CreateOrderAsync(Order order)
     {
-        var toppingDataTable = new DataTable();
+        // DataTable implements IDisposable dispose of it to ensure that memory is freed up immediately
+        using var toppingDataTable = new DataTable();
         toppingDataTable.Columns.Add("ToppingId", typeof(int));
 
         foreach (var topping in order.Toppings)
@@ -53,6 +61,7 @@ public class OrderRepository : IOrderRepository
         parameters.Add("@Toppings", toppingDataTable.AsTableValuedParameter("dbo.ToppingListType"));
 
         using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
 
         return await connection.QuerySingleAsync<int>(
             "usp_Orders_Insert", parameters, commandType: CommandType.StoredProcedure
