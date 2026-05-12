@@ -126,4 +126,28 @@ BEGIN
 END
 GO
 
+-- =============================================
+-- Section: PIzzaSizes Stored Procedures
+-- =============================================
+GO
 
+CREATE OR ALTER PROCEDURE [dbo].[usp_PizzaSizes_GetAll]
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT 
+        [SizeId],
+        [SizeName],
+        [BasePrice],
+        [IsActive]
+    FROM [dbo].[PizzaSizes]
+    WHERE [IsActive] = 1
+    ORDER BY [BasePrice] ASC;
+END
+GO
+
+-- =============================================
+-- Section: Orders Stored Procedures
+-- =============================================
+GO
