@@ -1,4 +1,5 @@
-using AvalonPizza.Server.Interfaces;
+using AvalonPizza.Server.Interfaces.Repositories;
+using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.Data.SqlClient;
@@ -48,7 +49,7 @@ public class Program
         builder.Services.AddControllers();
 
         // Dependency Injection list
-        builder.Services.AddScoped<IPizzaRepository, PizzaRepository>();
+        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IPizzaService, PizzaService>();
 
         var app = builder.Build();

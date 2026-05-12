@@ -1,4 +1,4 @@
-﻿using AvalonPizza.Server.Interfaces;
+﻿using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Models;
 using Dapper;
 using Microsoft.Data.SqlClient;

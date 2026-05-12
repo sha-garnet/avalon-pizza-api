@@ -1,6 +1,6 @@
 ﻿using AvalonPizza.Server.Models;
 
-namespace AvalonPizza.Server.Interfaces;
+namespace AvalonPizza.Server.Interfaces.Repositories;
 
 public interface IToppingRepository
 {

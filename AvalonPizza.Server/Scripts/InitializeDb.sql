@@ -23,14 +23,14 @@ GO
 IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[Toppings]') AND type in (N'U'))
 BEGIN
     CREATE TABLE [dbo].[Toppings] (
-        [ToppingId]   INT IDENTITY(1,1) NOT NULL, -- Fixed typo: ToppingId
+        [ToppingId]   INT IDENTITY(1,1) NOT NULL,
         [ToppingName] NVARCHAR(50)      NOT NULL,
-        [ToppingPrice] DECIMAL(18, 2)    NOT NULL,
+        [ToppingPrice] DECIMAL(18, 2)   NOT NULL,
         [IsActive]    BIT DEFAULT 1,
         CONSTRAINT [PK_Toppings] PRIMARY KEY CLUSTERED ([ToppingId] ASC)
     );
     INSERT INTO [dbo].[Toppings] ([ToppingName], [ToppingPrice])
-    VALUES ('Pepperoni', 1.50), ('Mushrooms', 1.00), ('Extra Cheese', 1.25), ('Onions', 0.75), ('Sausage', 1.50), ('Bacon', 2.00), ('Chicken', 2.00);
+    VALUES ('Pepperoni', 1.50), ('Mushrooms', 1.00), ('Cheese', 0.00), ('Extra Cheese', 1.25), ('Onions', 0.75), ('Sausage', 1.50), ('Bacon', 2.00), ('Chicken', 2.00);
 END
 GO
 
@@ -54,7 +54,7 @@ BEGIN
         [SizeId]    INT IDENTITY(1,1) NOT NULL,
         [SizeName]  NVARCHAR(50)      NOT NULL,
         [BasePrice] DECIMAL(18, 2)    NOT NULL,
-        [IsActive]  BIT DEFAULT 1, -- Added missing comma
+        [IsActive]  BIT DEFAULT 1,
         CONSTRAINT [PK_PizzaSizes] PRIMARY KEY CLUSTERED ([SizeId] ASC)
     );
     INSERT INTO [dbo].[PizzaSizes] ([SizeName], [BasePrice])
@@ -73,10 +73,9 @@ BEGIN
         [SizeId]          INT NOT NULL,
         [TotalPrice]      DECIMAL(18, 2) NOT NULL,
         [StatusId]        INT NOT NULL CONSTRAINT [DF_Orders_StatusId] DEFAULT (1),
-        [CreatedAt]       DATETIME2(3) NOT NULL CONSTRAINT [DF_Orders_CreatedAt] DEFAULT (SYSUTCDATETIME()),
-        [UpdatedAt]       DATETIME2(3) NULL,
+        [CreatedAt]       DATETIMEOFFSET(3) NOT NULL CONSTRAINT [DF_Orders_CreatedAt] DEFAULT ((SYSUTCDATETIME() AT TIME ZONE N'UTC')),
+        [UpdatedAt]       DATETIMEOFFSET(3) NULL,
         [IsActive]        BIT NOT NULL CONSTRAINT [DF_Orders_IsActive] DEFAULT (1),
-
         CONSTRAINT [PK_Orders] PRIMARY KEY CLUSTERED ([Id] ASC),
         CONSTRAINT [FK_Orders_Sizes] FOREIGN KEY ([SizeId]) REFERENCES [dbo].[PizzaSizes]([SizeId]),
         CONSTRAINT [FK_Orders_OrderStatus] FOREIGN KEY ([StatusId]) REFERENCES [dbo].[OrderStatus] ([StatusId])
@@ -150,4 +149,37 @@ GO
 -- =============================================
 -- Section: Orders Stored Procedures
 -- =============================================
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_GetById]
+    @Id INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        o.[Id],
+        o.[CustomerName],
+        o.[PhoneNumber],
+        o.[DeliveryAddress],
+        o.[SizeId],
+        o.[TotalPrice],
+        o.[StatusId],
+        o.[CreatedAt],
+        o.[UpdatedAt],
+        o.[IsActive],
+        s.[SizeName]
+    FROM [dbo].[Orders] o
+    INNER JOIN [dbo].[PizzaSizes] s ON o.[SizeId] = s.[SizeId]
+    INNER JOIN [dbo].[OrderStatus] os ON o.[StatusId] = os.[StatusId]
+    WHERE o.[Id] = @Id AND o.[IsActive] = 1;
+
+    SELECT
+        t.[ToppingId],
+        t.[ToppingName],
+        t.[Price]
+    FROM [dbo].[OrderToppings] ot
+    INNER JOIN [dbo].[Toppings] t ON ot.[ToppingId] = t.[ToppingId]
+    WHERE ot.[OrderId] = @Id;
+END
 GO
