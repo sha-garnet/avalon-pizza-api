@@ -1,3 +1,4 @@
+using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Repositories;
@@ -30,7 +31,6 @@ public class Program
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
             ?? Array.Empty<string>();
         // Define the CORS policy
-
         builder.Services.AddCors(options =>
         {
             options.AddPolicy(PizzaPolicy, policy =>
@@ -39,6 +39,13 @@ public class Program
                       .AllowAnyHeader() // This allows use custom headers (like Authorization tokens)
                       .AllowAnyMethod(); // This allows GET, POST, PUT, and DELETE
             });
+        });
+
+        // Redis
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
+            options.InstanceName = "AvalonPizza_";
         });
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -53,6 +60,7 @@ public class Program
         builder.Services.AddScoped<IOrderService, OrderService>();
         builder.Services.AddScoped<IToppingRepository, ToppingRepository>();
         builder.Services.AddScoped<IPizzaSizeRepository, PizzaSizeRepository>();
+        builder.Services.AddScoped<ICacheService, CacheService>();
 
         var app = builder.Build();
 

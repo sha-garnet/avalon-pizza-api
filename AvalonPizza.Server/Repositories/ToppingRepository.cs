@@ -19,6 +19,8 @@ public class ToppingRepository : IToppingRepository
     public async Task<IEnumerable<Topping>> GetAllToppingsAsync()
     {
         using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
         return await connection.QueryAsync<Topping>(
             "usp_Toppings_GetAll", commandType: CommandType.StoredProcedure
         );
