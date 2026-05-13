@@ -10,9 +10,10 @@ public class PizzaSizeRepository : IPizzaSizeRepository
 {
     private readonly string _connectionString;
 
-    public PizzaSizeRepository(string connectionString)
+    public PizzaSizeRepository(IConfiguration configuration)
     {
-        _connectionString = connectionString;
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
     }
 
     public async Task<IEnumerable<PizzaSize>> GetAllAsync()

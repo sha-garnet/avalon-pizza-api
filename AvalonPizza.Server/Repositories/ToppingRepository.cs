@@ -10,9 +10,10 @@ public class ToppingRepository : IToppingRepository
 {
     private readonly string _connectionString;
 
-    public ToppingRepository(string connectionString)
+    public ToppingRepository(IConfiguration configuration)
     {
-        _connectionString = connectionString;
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
     }
 
     public async Task<IEnumerable<Topping>> GetAllToppingsAsync()
