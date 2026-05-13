@@ -10,9 +10,10 @@ public class OrderRepository : IOrderRepository
 {
     private readonly string _connectionString;
 
-    public OrderRepository(string connectionString)
+    public OrderRepository(IConfiguration configuration)
     {
-        _connectionString = connectionString;
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
     }
 
     public async Task<Order?> GetOrderByIdAsync(int id)
