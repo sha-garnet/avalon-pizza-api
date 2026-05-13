@@ -33,7 +33,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<int>> CreateOrder([FromBody] Order order)
+    public async Task<ActionResult<int>> CreateOrder([FromBody] Order order) // [FromBody]: This tells .NET to look at the request body for JSON and map it directly into your Order model
     {
         try
         {
@@ -43,10 +43,11 @@ public class OrderController : ControllerBase
                 return BadRequest("Invalid order data provided.");
             }
 
-            // Call the service to calculate price and save to DB
             int newOrderId = await _orderService.PlaceOrderAsync(order);
 
             // Returns a 201 Created status with the link to the new resource
+            // (Generates URL) It looks at your GetOrder method's route (api/orders/{id}) and fills in the {id} with your newOrderId
+            // It adds a Location field to the response metadata => Location: https://api.avalonpizza.com/api/orders/1024
             return CreatedAtAction(nameof(GetOrder), new { id = newOrderId }, newOrderId);
         }
         catch (Exception ex)
