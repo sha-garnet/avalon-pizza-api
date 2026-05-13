@@ -6,7 +6,7 @@ using System.Data;
 
 namespace AvalonPizza.Server.Repositories;
 
-public class PizzaSizeRepository : IPizzaSize
+public class PizzaSizeRepository : IPizzaSizeRepository
 {
     private readonly string _connectionString;
 

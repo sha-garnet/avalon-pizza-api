@@ -2,7 +2,7 @@
 
 namespace AvalonPizza.Server.Interfaces.Repositories;
 
-public interface IPizzaSize
+public interface IPizzaSizeRepository
 {
     Task<IEnumerable<PizzaSize>> GetAllAsync();
 }

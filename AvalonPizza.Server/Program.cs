@@ -50,7 +50,9 @@ public class Program
 
         // Dependency Injection list
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-        builder.Services.AddScoped<IPizzaService, PizzaService>();
+        builder.Services.AddScoped<IOrderService, OrderService>();
+        builder.Services.AddScoped<IToppingRepository, ToppingRepository>();
+        builder.Services.AddScoped<IPizzaSizeRepository, PizzaSizeRepository>();
 
         var app = builder.Build();
 
