@@ -86,26 +86,7 @@ public class Program
         // Placed near the top (before app.MapControllers().). It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
         // If anything below it fails, your "net" will catch it. This "net" catches any unhandled errors in your API. Relyin on our global middleware
         // TODO mode out and create its own middleware class
-        app.Use(async (context, next) =>
-        {
-            try
-            {
-                await next();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex, "An unhandled exception occurred during request {Path}", context.Request.Path);
-
-                context.Response.StatusCode = 500;
-                context.Response.ContentType = "application/json";
-                var errorResponse = new
-                {
-                    error = "A server error occurred.",
-                    details = app.Environment.IsDevelopment() ? ex.Message : "Contact support for assistance."
-                };
-                await context.Response.WriteAsJsonAsync(errorResponse);
-            }
-        });
+        app.UseMiddleware<SqlExceptionMiddleware>();
 
         // API Key Authentication
         //app.UseMiddleware<ApiKeyMiddleware>();
