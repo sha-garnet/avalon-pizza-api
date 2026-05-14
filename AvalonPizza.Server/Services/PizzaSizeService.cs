@@ -2,8 +2,6 @@
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
-using Microsoft.Extensions.Caching.Distributed;
-using System.Text.Json;
 
 namespace AvalonPizza.Server.Services;
 
@@ -11,7 +9,7 @@ public class PizzaSizeService : IPizzaSizeService
 {
     private readonly IPizzaSizeRepository _pizzaSizeRepository;
     private readonly ICacheService _cacheService;
-    private const string SizesCacheKey = "PizzaSizes_List";
+    private const string SizesCacheKey = "PizzaSizeService_AllSizes";
 
     public PizzaSizeService(IPizzaSizeRepository sizeRepository, ICacheService cacheService)
     {
