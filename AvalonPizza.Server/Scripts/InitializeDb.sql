@@ -208,7 +208,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-        
+
         -- Ensure the list of toppings is not empty
         IF NOT EXISTS (SELECT 1 FROM @Toppings)
         BEGIN
@@ -220,9 +220,9 @@ BEGIN
         BEGIN
             ;THROW 50003, 'One or more selected toppings do not exist.', 5;
         END
-        
+
         BEGIN TRANSACTION;
-        
+
         INSERT INTO [dbo].[Orders] (
             [CustomerName],
             [PhoneNumber],
@@ -320,7 +320,6 @@ BEGIN
 
         -- Sync Toppings (The "Delete and Re-insert" strategy)
         -- This is the cleanest way to handle a Junction Table update
-        
         -- Remove existing toppings for this order
         DELETE FROM [dbo].[OrderToppings] 
         WHERE [OrderId] = @OrderId;
