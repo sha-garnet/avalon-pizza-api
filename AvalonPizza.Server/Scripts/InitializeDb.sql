@@ -181,6 +181,11 @@ BEGIN
     INNER JOIN [dbo].[OrderStatus] os ON o.[StatusId] = os.[StatusId]
     WHERE o.[Id] = @Id AND o.[IsActive] = 1;
 
+    IF @@ROWCOUNT = 0
+    BEGIN
+        ;THROW 50001, 'Order not found or inactive.', 1;
+    END
+
     SELECT
         t.[ToppingId],
         t.[ToppingName],
@@ -203,14 +208,21 @@ AS
 BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
-        BEGIN TRANSACTION;
-
+        
         -- Ensure the list of toppings is not empty
         IF NOT EXISTS (SELECT 1 FROM @Toppings)
         BEGIN
-            ;THROW 50007, 'An order must contain at least one topping.', 6;
+            ;THROW 50002, 'An order must contain at least one topping.', 4;
         END
 
+        -- Validate that the new toppings actually exists in the lookup table
+        IF EXISTS (SELECT 1 FROM @Toppings t WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Toppings] d WHERE d.ToppingId = t.ToppingId))
+        BEGIN
+            ;THROW 50003, 'One or more selected toppings do not exist.', 5;
+        END
+        
+        BEGIN TRANSACTION;
+        
         INSERT INTO [dbo].[Orders] (
             [CustomerName],
             [PhoneNumber],
@@ -231,6 +243,7 @@ BEGIN
         );
 
         -- Capture the New Order ID
+        -- SCOPE_IDENTITY() ensures that the order and its toppings are treated as a single "atomic" action. It either all works, or nothing changes
         DECLARE @NewOrderId INT = SCOPE_IDENTITY();
 
         INSERT INTO [dbo].[OrderToppings] ([OrderId], [ToppingId])
@@ -268,7 +281,13 @@ BEGIN
         -- Ensure the list of toppings is not empty
         IF NOT EXISTS (SELECT 1 FROM @Toppings)
         BEGIN
-            ;THROW 50006, 'An order must contain at least one topping.', 5;
+            ;THROW 50004, 'An order must contain at least one topping.', 4;
+        END
+
+        -- Validate that the new toppings actually exists in the lookup table
+        IF EXISTS (SELECT 1 FROM @Toppings t WHERE NOT EXISTS (SELECT 1 FROM [dbo].[Toppings] d WHERE d.ToppingId = t.ToppingId))
+        BEGIN
+            ;THROW 50005, 'One or more selected toppings do not exist.', 5;
         END
 
         BEGIN TRANSACTION;
@@ -291,11 +310,11 @@ BEGIN
             -- We check if it exists at all to give a better error message
             IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
             BEGIN
-                ;THROW 50002, 'Order can only be modified while in Pending status.', 2;
+                ;THROW 50006, 'Order can only be modified while in Pending status.', 2;
             END
             ELSE
             BEGIN
-                ;THROW 50001, 'Order not found or inactive.', 1;
+                ;THROW 50007, 'Order not found or inactive.', 1;
             END
         END
 
@@ -331,7 +350,7 @@ BEGIN
     -- Validate that the new StatusId actually exists in the lookup table
     IF NOT EXISTS (SELECT 1 FROM [dbo].[OrderStatus] WHERE [StatusId] = @StatusId)
     BEGIN
-        ;THROW 50005, 'The provided Status ID is invalid.', 3;
+        ;THROW 50008, 'The provided Status ID is invalid.', 3;
     END
 
     UPDATE [dbo].[Orders]
@@ -341,7 +360,7 @@ BEGIN
 
     IF @@ROWCOUNT = 0
     BEGIN
-        ;THROW 50001, 'Order not found or inactive.', 1;
+        ;THROW 50009, 'Order not found or inactive.', 1;
     END
 END
 GO
@@ -367,11 +386,11 @@ BEGIN
         BEGIN
             IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
             BEGIN
-                ;THROW 50004, 'Only pending orders can be cancelled/deleted.', 2;
+                ;THROW 50010, 'Order can only be modified while in Pending status.', 2;
             END
             ELSE
             BEGIN
-                ;THROW 50001, 'Order not found or already deleted.', 1;
+                ;THROW 50011, 'Order not found or inactive.', 1;
             END
         END
     END TRY
