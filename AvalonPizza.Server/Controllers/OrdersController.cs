@@ -1,6 +1,7 @@
 ﻿using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace AvalonPizza.Server.Controllers;
 
@@ -91,10 +92,12 @@ public class OrdersController : ControllerBase
 
     /// <summary>
     /// PATCH: api/orders/{id}/status
+    /// Can only be invoked by ADMIN
     /// </summary>
     /// <param name="id"></param>
     /// <param name="statusId"></param>
     /// <returns></returns>
+    [Authorize]
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] int statusId)
     {

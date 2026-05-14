@@ -89,7 +89,8 @@ public class Program
         app.UseMiddleware<SqlExceptionMiddleware>();
 
         // API Key Authentication
-        //app.UseMiddleware<ApiKeyMiddleware>();
+        app.UseRouting(); // Identifies the endpoint (Public or [Authorize])
+        app.UseMiddleware<ApiKeyMiddleware>();
 
         // SQL Scripting => This runs every time you hit 'Start' in Visual Studio
         DbInitializer.Initialize(connectionString);
