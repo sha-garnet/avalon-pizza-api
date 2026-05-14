@@ -63,7 +63,24 @@ public class Program
         builder.Services.AddScoped<IPizzaSizeRepository, PizzaSizeRepository>();
         builder.Services.AddScoped<ICacheService, CacheService>();
 
+        // SWAGGER
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new() { Title = "Avalon Pizza API", Version = "v1" });
+        });
+
         var app = builder.Build();
+
+        // SWAGGER
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Avalon Pizza API v1");
+            });
+        }
 
         // Global Error Handling
         // Placed near the top (before app.MapControllers().). It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
@@ -91,9 +108,9 @@ public class Program
         });
 
         // API Key Authentication
-        app.UseMiddleware<ApiKeyMiddleware>();
+        //app.UseMiddleware<ApiKeyMiddleware>();
 
-        // This runs every time you hit 'Start' in Visual Studio
+        // SQL Scripting => This runs every time you hit 'Start' in Visual Studio
         DbInitializer.Initialize(connectionString);
 
         // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
