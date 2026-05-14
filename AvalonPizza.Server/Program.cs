@@ -1,6 +1,7 @@
 using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
+using AvalonPizza.Server.Middleware;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.Data.SqlClient;
@@ -67,6 +68,7 @@ public class Program
         // Global Error Handling
         // Placed near the top (before app.MapControllers().). It means it wraps around everything that follows (the Database initializer, the Controllers, etc.).
         // If anything below it fails, your "net" will catch it. This "net" catches any unhandled errors in your API. Relyin on our global middleware
+        // TODO mode out and create its own middleware class
         app.Use(async (context, next) =>
         {
             try
@@ -87,6 +89,9 @@ public class Program
                 await context.Response.WriteAsJsonAsync(errorResponse);
             }
         });
+
+        // API Key Authentication
+        app.UseMiddleware<ApiKeyMiddleware>();
 
         // This runs every time you hit 'Start' in Visual Studio
         DbInitializer.Initialize(connectionString);

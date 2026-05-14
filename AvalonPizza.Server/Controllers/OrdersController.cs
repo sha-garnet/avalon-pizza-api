@@ -32,8 +32,14 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
+    /// <summary>
+    /// 
+    /// [FromBody]: This tells .NET to look at the request body for JSON and map it directly into your Order model
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
     [HttpPost]
-    public async Task<ActionResult<int>> CreateOrder([FromBody] Order order) // [FromBody]: This tells .NET to look at the request body for JSON and map it directly into your Order model
+    public async Task<ActionResult<int>> CreateOrder([FromBody] Order order)
     {
         try
         {
