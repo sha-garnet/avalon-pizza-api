@@ -205,6 +205,12 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
 
+        -- Ensure the list of toppings is not empty
+        IF NOT EXISTS (SELECT 1 FROM @Toppings)
+        BEGIN
+            ;THROW 50007, 'An order must contain at least one topping.', 6;
+        END
+
         INSERT INTO [dbo].[Orders] (
             [CustomerName],
             [PhoneNumber],
@@ -239,6 +245,137 @@ BEGIN
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- Update Order
+CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_Update]
+    @OrderId         INT,
+    @CustomerName    NVARCHAR(100),
+    @PhoneNumber     NVARCHAR(20),
+    @DeliveryAddress NVARCHAR(500),
+    @SizeId          INT,
+    @TotalPrice      DECIMAL(18,2),
+    @Toppings        [dbo].[ToppingListType] READONLY -- The new list of Topping IDs
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+
+        -- Ensure the list of toppings is not empty
+        IF NOT EXISTS (SELECT 1 FROM @Toppings)
+        BEGIN
+            ;THROW 50006, 'An order must contain at least one topping.', 5;
+        END
+
+        BEGIN TRANSACTION;
+
+        -- Update the main Order details
+        UPDATE [dbo].[Orders]
+        SET [CustomerName] = @CustomerName,
+            [PhoneNumber] = @PhoneNumber,
+            [DeliveryAddress] = @DeliveryAddress,
+            [SizeId] = @SizeId,
+            [TotalPrice] = @TotalPrice,
+            [UpdatedAt] = SYSUTCDATETIME() AT TIME ZONE 'UTC'
+        WHERE [Id] = @OrderId 
+            AND [IsActive] = 1
+            AND [StatusId] = 1;
+
+        -- Check if the order actually exists
+        IF @@ROWCOUNT = 0
+        BEGIN
+            -- We check if it exists at all to give a better error message
+            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
+            BEGIN
+                ;THROW 50002, 'Order can only be modified while in Pending status.', 2;
+            END
+            ELSE
+            BEGIN
+                ;THROW 50001, 'Order not found or inactive.', 1;
+            END
+        END
+
+        -- Sync Toppings (The "Delete and Re-insert" strategy)
+        -- This is the cleanest way to handle a Junction Table update
+        
+        -- Remove existing toppings for this order
+        DELETE FROM [dbo].[OrderToppings] 
+        WHERE [OrderId] = @OrderId;
+
+        -- Insert the new set of toppings from the User-Defined Table Type
+        INSERT INTO [dbo].[OrderToppings] ([OrderId], [ToppingId])
+        SELECT @OrderId, [ToppingId]
+        FROM @Toppings;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+GO
+
+-- Update Order Status
+CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_UpdateStatus]
+    @OrderId  INT,
+    @StatusId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Validate that the new StatusId actually exists in the lookup table
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[OrderStatus] WHERE [StatusId] = @StatusId)
+    BEGIN
+        ;THROW 50005, 'The provided Status ID is invalid.', 3;
+    END
+
+    UPDATE [dbo].[Orders]
+    SET [StatusId] = @StatusId,
+        [UpdatedAt] = SYSUTCDATETIME() AT TIME ZONE 'UTC'
+    WHERE [Id] = @OrderId AND [IsActive] = 1;
+
+    IF @@ROWCOUNT = 0
+    BEGIN
+        ;THROW 50001, 'Order not found or inactive.', 1;
+    END
+END
+GO
+
+-- Delete Order
+CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_Delete]
+    @OrderId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    BEGIN TRY
+        -- We only update IsActive to 0 if the status is Pending (1)
+        UPDATE [dbo].[Orders]
+        SET [IsActive] = 0,
+            [UpdatedAt] = SYSUTCDATETIME() AT TIME ZONE 'UTC'
+        WHERE [Id] = @OrderId 
+          AND [IsActive] = 1 
+          AND [StatusId] = 1;
+
+        -- If the update failed, find out if it was the ID or the Status
+        IF @@ROWCOUNT = 0
+        BEGIN
+            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
+            BEGIN
+                ;THROW 50004, 'Only pending orders can be cancelled/deleted.', 2;
+            END
+            ELSE
+            BEGIN
+                ;THROW 50001, 'Order not found or already deleted.', 1;
+            END
+        END
+    END TRY
+    BEGIN CATCH
         THROW;
     END CATCH
 END
