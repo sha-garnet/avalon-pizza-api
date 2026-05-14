@@ -2,6 +2,6 @@
 
 public interface ICacheService
 {
-    Task<T?> GetAsync<T>(string key);
-    Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null);
+    Task<T?> GetAsync<T>(string key) where T : class;
+    Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null) where T : class;
 }
