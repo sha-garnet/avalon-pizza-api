@@ -6,14 +6,14 @@ namespace AvalonPizza.Server.Controllers;
 
 [ApiController]
 [Route("api/[controller]")] // This makes the URL: api/orders
-public class OrderController : ControllerBase
+public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
-    private readonly ILogger<OrderController> _logger;
+    private readonly ILogger<OrdersController> _logger;
 
-    public OrderController(
+    public OrdersController(
         IOrderService orderService,
-        ILogger<OrderController> logger)
+        ILogger<OrdersController> logger)
     {
         _orderService = orderService;
         _logger = logger;
