@@ -19,6 +19,11 @@ public class OrdersController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
     [HttpGet("{id}")]
     public async Task<ActionResult<Order>> GetOrder(int id)
     {
@@ -61,5 +66,51 @@ public class OrdersController : ControllerBase
             _logger.LogError(ex, "Error occurred while creating an order for {CustomerName}", order?.CustomerName);
             return StatusCode(500, "An internal error occurred while processing your order.");
         }
+    }
+
+    /// <summary>
+    /// PUT: api/orders/{id}
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="orderDto"></param>
+    /// <returns></returns>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order order)
+    {
+        if (id != order.Id)
+        {
+            return BadRequest("ID mismatch between URL and body.");
+        }
+
+        // The Service calls the Repo, which calls the Stored Proc.
+        // Our Middleware will catch any SQL Exceptions (like "Order not Pending").
+        await _orderService.UpdateOrderAsync(order);
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// PATCH: api/orders/{id}/status
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="statusId"></param>
+    /// <returns></returns>
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] int statusId)
+    {
+        await _orderService.UpdateOrderStatusAsync(id, statusId);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// DELETE: api/orders/{id}
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteOrder(int id)
+    {
+        await _orderService.DeleteOrderAsync(id);
+        return NoContent();
     }
 }

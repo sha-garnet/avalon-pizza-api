@@ -16,7 +16,12 @@ public class OrderRepository : IOrderRepository
             ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
     }
 
-    public async Task<Order?> GetOrderByIdAsync(int id)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    public async Task<Order?> GetOrderByIdAsync(int orderId)
     {
         using var connection = new SqlConnection(_connectionString);
         // By opening it once at the start "Explicitly", you keep the connection open for the entire
@@ -26,7 +31,7 @@ public class OrderRepository : IOrderRepository
         await connection.OpenAsync();
 
         using var reader = await connection.QueryMultipleAsync(
-            "usp_Orders_GetById", new { Id = id }, commandType: CommandType.StoredProcedure
+            "usp_Orders_GetById", new { Id = orderId }, commandType: CommandType.StoredProcedure
         );
 
         var order = await reader.ReadSingleOrDefaultAsync<Order>();
@@ -42,16 +47,14 @@ public class OrderRepository : IOrderRepository
         return order;
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
     public async Task<int> CreateOrderAsync(Order order)
     {
-        // DataTable implements IDisposable dispose of it to ensure that memory is freed up immediately
-        using var toppingDataTable = new DataTable();
-        toppingDataTable.Columns.Add("ToppingId", typeof(int));
-
-        foreach (var topping in order.Toppings)
-        {
-            toppingDataTable.Rows.Add(topping.ToppingId);
-        }
+        var toppingDataTable = CreateToppingDataTable(order.Toppings);
 
         var parameters = new DynamicParameters();
         parameters.Add("@CustomerName", order.CustomerName);
@@ -66,6 +69,78 @@ public class OrderRepository : IOrderRepository
 
         return await connection.QuerySingleAsync<int>(
             "usp_Orders_Insert", parameters, commandType: CommandType.StoredProcedure
+        );
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="order"></param>
+    /// <returns></returns>
+    public async Task UpdateOrderAsync(Order order)
+    {
+        var toppingTable = CreateToppingDataTable(order.Toppings);
+
+        var parameters = new DynamicParameters();
+        parameters.Add("@OrderId", order.Id);
+        parameters.Add("@CustomerName", order.CustomerName);
+        parameters.Add("@PhoneNumber", order.PhoneNumber);
+        parameters.Add("@DeliveryAddress", order.DeliveryAddress);
+        parameters.Add("@SizeId", order.SizeId);
+        parameters.Add("@TotalPrice", order.TotalPrice);
+        parameters.Add("@Toppings", toppingTable.AsTableValuedParameter("dbo.ToppingListType"));
+
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await connection.ExecuteAsync(
+            "usp_Orders_Update", parameters, commandType: CommandType.StoredProcedure
+        );
+    }
+
+    private DataTable CreateToppingDataTable(IEnumerable<Topping> toppings)
+    {
+        // DataTable implements IDisposable
+        // dispose of it to ensure that memory is freed up immediately
+        using var toppingDataTable = new DataTable();
+        toppingDataTable.Columns.Add("ToppingId", typeof(int));
+        
+        foreach (var topping in toppings)
+        {
+            toppingDataTable.Rows.Add(topping.ToppingId);
+        }
+
+        return toppingDataTable;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <param name="statusId"></param>
+    /// <returns></returns>
+    public async Task UpdateOrderStatusAsync(int orderId, int statusId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await connection.ExecuteAsync(
+            "usp_Orders_UpdateStatus", new { OrderId = orderId, StatusId = statusId }, commandType: CommandType.StoredProcedure
+        );
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="orderId"></param>
+    /// <returns></returns>
+    public async Task DeleteOrderAsync(int orderId)
+    {
+        using var connection = new SqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        await connection.ExecuteAsync(
+            "usp_Orders_Delete", new { OrderId = orderId }, commandType: CommandType.StoredProcedure
         );
     }
 }

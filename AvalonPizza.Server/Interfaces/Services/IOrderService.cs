@@ -6,4 +6,7 @@ public interface IOrderService
 {
     Task<Order?> GetOrderDetailsAsync(int id);
     Task<int> PlaceOrderAsync(Order order);
+    Task UpdateOrderAsync(Order order);
+    Task UpdateOrderStatusAsync(int orderId, int statusId);
+    Task DeleteOrderAsync(int orderId);
 }

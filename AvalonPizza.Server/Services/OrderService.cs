@@ -1,7 +1,6 @@
 ﻿using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
-using AvalonPizza.Server.Repositories;
 
 namespace AvalonPizza.Server.Services;
 
@@ -35,7 +34,8 @@ public class OrderService : IOrderService
         var availableToppings = await _toppingRepository.GetAllToppingsAsync();
 
         var selectedSize = availableSizes.FirstOrDefault(s => s.SizeId == order.SizeId);
-        if (selectedSize == null) throw new Exception("Invalid Pizza Size selected.");
+        if (selectedSize == null)
+            throw new Exception("Invalid Pizza Size selected.");
 
         decimal totalPrice = selectedSize.BasePrice;
 
@@ -51,5 +51,40 @@ public class OrderService : IOrderService
         order.TotalPrice = totalPrice;
 
         return await _orderRepository.CreateOrderAsync(order);
+    }
+
+    public async Task UpdateOrderAsync(Order order)
+    {
+        var availableSizes = await _pizzaSizeRepository.GetAllAsync();
+        var availableToppings = await _toppingRepository.GetAllToppingsAsync();
+
+        var selectedSize = availableSizes.FirstOrDefault(s => s.SizeId == order.SizeId);
+        if (selectedSize == null)
+            throw new Exception("Invalid Pizza Size selected.");
+
+        decimal totalPrice = selectedSize.BasePrice;
+
+        foreach (var orderTopping in order.Toppings)
+        {
+            var toppingInfo = availableToppings.FirstOrDefault(t => t.ToppingId == orderTopping.ToppingId);
+            if (toppingInfo != null)
+            {
+                totalPrice += toppingInfo.ToppingPrice;
+            }
+        }
+
+        order.TotalPrice = totalPrice;
+
+        await _orderRepository.UpdateOrderAsync(order);
+    }
+
+    public async Task UpdateOrderStatusAsync(int orderId, int statusId)
+    {
+        await _orderRepository.UpdateOrderStatusAsync(orderId, statusId);
+    }
+
+    public async Task DeleteOrderAsync(int orderId)
+    {
+        await _orderRepository.DeleteOrderAsync(orderId);
     }
 }
