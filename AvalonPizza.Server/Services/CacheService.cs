@@ -58,4 +58,21 @@ public class CacheService : ICacheService
             _logger.LogError(ex, "Failed to set cache for key: {Key}", key);
         }
     }
+
+    /// <summary>
+    /// Cache Invalidation, delete the cache entry whenever a Create, Update, or Delete operation occurs
+    /// </summary>
+    /// <param name="key"></param>
+    /// <returns></returns>
+    public async Task RemoveAsync(string key)
+    {
+        try
+        {
+            await _cache.RemoveAsync(key);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove cache key: {Key}", key);
+        }
+    }
 }
