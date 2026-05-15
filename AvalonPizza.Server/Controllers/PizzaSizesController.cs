@@ -24,6 +24,7 @@ public class PizzaSizesController : ControllerBase
     /// Retrieves all pizza sizes and base prices. Optimized with Redis caching.
     /// GET: api/pizzas/sizes
     /// </summary>
+    /// <returns>IEnumerable<PizzaSize></returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PizzaSize>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
