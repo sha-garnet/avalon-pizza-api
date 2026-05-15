@@ -62,7 +62,9 @@ public class Program
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IOrderService, OrderService>();
         builder.Services.AddScoped<IToppingRepository, ToppingRepository>();
+        builder.Services.AddScoped<IToppingService, ToppingService>();
         builder.Services.AddScoped<IPizzaSizeRepository, PizzaSizeRepository>();
+        builder.Services.AddScoped<IPizzaSizeService, PizzaSizeService>();
         builder.Services.AddScoped<ICacheService, CacheService>();
 
         // SWAGGER
