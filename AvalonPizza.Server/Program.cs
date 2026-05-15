@@ -68,6 +68,33 @@ public class Program
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new() { Title = "Avalon Pizza API", Version = "v1" });
+
+            // 1. Define the Security Scheme (The "Lock")
+            c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Description = "Enter your API Key in the box below. Format: X-Api-Key: YOUR_KEY",
+                Name = "X-Api-Key", // The header name your middleware looks for
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                Scheme = "ApiKeyScheme"
+            });
+
+            // 2. Apply the Security Requirement (The "Keycard")
+            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            {
+                {
+                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        {
+                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                            Id = "ApiKey" // Must match the name defined above
+                        },
+                        In = Microsoft.OpenApi.Models.ParameterLocation.Header
+                    },
+                    new List<string>()
+                }
+            });
         });
 
         var app = builder.Build();
@@ -79,6 +106,8 @@ public class Program
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Avalon Pizza API v1");
+                // Optional: Sets Swagger as the default home page (localhost:xxxx/)
+                c.RoutePrefix = string.Empty;
             });
         }
 
@@ -98,7 +127,8 @@ public class Program
         // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
         app.UseCors(PizzaPolicy);
 
-        app.MapGet("/", () => new { message = "AVALON PIZZA API!" });
+        // Optional: Sets the default home page (localhost:xxxx/)
+        //app.MapGet("/", () => new { message = "AVALON PIZZA API!" });
 
         // Configure the HTTP request pipeline.
         app.MapControllers();
