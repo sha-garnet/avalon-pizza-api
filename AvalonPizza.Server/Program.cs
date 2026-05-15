@@ -7,7 +7,6 @@ using AvalonPizza.Server.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.SqlClient;
 using Serilog;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -204,7 +203,7 @@ public class Program
         {
             Log.Information("Database initialization started using master catalog.");
 
-            string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "scripts", "InitializeDb.sql");
+            string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Database", "TablesAndProcs.sql");
             if (!File.Exists(scriptPath))
             {
                 throw new FileNotFoundException($"Could not find the SQL script at: {scriptPath}");
