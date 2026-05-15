@@ -20,7 +20,7 @@ namespace AvalonPizza.Server.Models
         [Required(ErrorMessage = "Size id is required.")]
         public int? SizeId { get; set; }
         public decimal TotalPrice { get; set; }
-        public int StatusId { get; set; }
+        public OrderStatus StatusId { get; set; }
         public bool IsActive { get; set; }
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset? UpdatedAt { get; set; }
