@@ -9,7 +9,9 @@ namespace AvalonPizza.Server.Middleware
         private readonly RequestDelegate _next;
         private readonly ILogger<SqlExceptionMiddleware> _logger;
 
-        public SqlExceptionMiddleware(RequestDelegate next, ILogger<SqlExceptionMiddleware> logger)
+        public SqlExceptionMiddleware(
+            RequestDelegate next, 
+            ILogger<SqlExceptionMiddleware> logger)
         {
             _next = next;
             _logger = logger;

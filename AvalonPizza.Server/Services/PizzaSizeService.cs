@@ -9,28 +9,53 @@ public class PizzaSizeService : IPizzaSizeService
 {
     private readonly IPizzaSizeRepository _pizzaSizeRepository;
     private readonly ICacheService _cacheService;
+    private readonly ILogger<PizzaSizeService> _logger;
     private const string SizesCacheKey = "PizzaSizeService_AllSizes";
 
-    public PizzaSizeService(IPizzaSizeRepository sizeRepository, ICacheService cacheService)
+    public PizzaSizeService(
+        IPizzaSizeRepository sizeRepository,
+        ICacheService cacheService,
+        ILogger<PizzaSizeService> logger)
     {
         _pizzaSizeRepository = sizeRepository;
         _cacheService = cacheService;
+        _logger = logger;
     }
 
+    /// <summary>
+    /// This service implementation is a classic example of the Cache-Aside Pattern.
+    /// </summary>
+    /// <returns></returns>
     public async Task<IEnumerable<PizzaSize>> GetAllSizesAsync()
     {
-        // Attempt to retrieve from Redis
-        var sizes = await _cacheService.GetAsync<IEnumerable<PizzaSize>>(SizesCacheKey);
-
-        if (sizes == null)
+        try
         {
-            // Cache Miss: Fetch from SQL Server via Repository
-            sizes = await _pizzaSizeRepository.GetAllAsync();
+            // Attempt to retrieve from Redis
+            var cachedSizes = await _cacheService.GetAsync<IEnumerable<PizzaSize>>(SizesCacheKey);
+
+            if (cachedSizes != null)
+            {
+                _logger.LogInformation("Cache Hit: Retrieved pizza sizes from Redis.");
+                return cachedSizes;
+            }
+
+            // Cache Miss - fetching from data store
+            _logger.LogWarning("Cache Miss: Fetching pizza sizes from data store");
+            var sizes = await _pizzaSizeRepository.GetAllAsync();
+
             // Save to Redis
-            await _cacheService.SetAsync(SizesCacheKey, sizes);
+            if (sizes != null && sizes.Any())
+            {
+                await _cacheService.SetAsync(SizesCacheKey, sizes);
+            }
+
+            return sizes;
         }
-
-        return sizes;
+        catch (Exception ex)
+        {
+            // If Redis fails "Fail Over" to the data store
+            _logger.LogError(ex, "Redis failure in PizzaSizeService. Falling back to data store.");
+            return await _pizzaSizeRepository.GetAllAsync();
+        }
     }
-
 }

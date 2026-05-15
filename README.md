@@ -69,7 +69,7 @@ The API includes a **Custom Landing Page** at the root URL (`/`) which provides 
 | Method | Endpoint | SQL Procedure | Description |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/api/toppings` | `usp_Toppings_GetAll` | Retrieves all active toppings. Optimized with Redis caching. |
-| **GET** | `/api/sizes` | `usp_PizzaSizes_GetAll` | Retrieves all pizza sizes and base prices. Optimized with Redis caching. |
+| **GET** | `api/pizzas/sizes` | `usp_PizzaSizes_GetAll` | Retrieves all pizza sizes and base prices. Optimized with Redis caching. |
 | **GET** | `/api/orders/{id}` | `usp_Orders_GetById` | Fetches a specific order and its associated toppings via multiple result sets. |
 | **POST** | `/api/orders` | `usp_Orders_Insert` | Places a new order. Maps toppings using the `ToppingListType` UDTT. |
 | **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). Validates Status ID. |
