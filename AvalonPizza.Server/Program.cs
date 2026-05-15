@@ -4,8 +4,11 @@ using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Middleware;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.SqlClient;
 using Serilog;
+using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace AvalonPizza.Server;
@@ -97,6 +100,17 @@ public class Program
             });
         });
 
+        // Health Check
+        builder.Services.AddHealthChecks()
+            .AddSqlServer(
+                connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+                name: "SQL Server",
+                tags: new[] { "db", "sql" })
+            .AddRedis(
+                redisConnectionString: builder.Configuration.GetConnectionString("RedisConnection")!,
+                name: "Redis Cache",
+                tags: new[] { "cache", "redis" });
+
         var app = builder.Build();
 
         // SWAGGER
@@ -106,8 +120,6 @@ public class Program
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "Avalon Pizza API v1");
-                // Optional: Sets Swagger as the default home page (localhost:xxxx/)
-                c.RoutePrefix = string.Empty;
             });
         }
 
@@ -128,10 +140,57 @@ public class Program
         app.UseCors(PizzaPolicy);
 
         // Optional: Sets the default home page (localhost:xxxx/)
-        //app.MapGet("/", () => new { message = "AVALON PIZZA API!" });
+        app.MapGet("/", () => Results.Content(@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Avalon Pizza API</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+                    .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+                    h1 { color: #d32f2f; margin-bottom: 1.5rem; }
+                    .links { display: flex; gap: 20px; justify-content: center; }
+                    a { text-decoration: none; color: #1976d2; font-weight: bold; border: 1px solid #1976d2; padding: 10px 20px; border-radius: 4px; transition: all 0.2s; }
+                    a:hover { background-color: #1976d2; color: white; }
+                </style>
+            </head>
+            <body>
+                <div class='card'>
+                    <h1>🍕 Avalon Pizza API</h1>
+                    <p>Backend Status: <strong>Online</strong></p>
+                    <div class='links'>
+                        <a href='/swagger'>API Documentation (Swagger)</a>
+                        <a href='/health'>System Health Status</a>
+                    </div>
+                </div>
+            </body>
+            </html>", "text/html")
+        );
 
         // Configure the HTTP request pipeline.
         app.MapControllers();
+
+        // Health Check
+        // Run your app and navigate to localhost:xxxx/health
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResponseWriter = async (context, report) =>
+            {
+                context.Response.ContentType = "application/json";
+                var response = new
+                {
+                    status = report.Status.ToString(),
+                    checks = report.Entries.Select(entry => new
+                    {
+                        name = entry.Key,
+                        status = entry.Value.Status.ToString(),
+                        exception = entry.Value.Exception?.Message ?? "none",
+                        duration = entry.Value.Duration.ToString()
+                    })
+                };
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
+        });
 
         app.Run();
     }
