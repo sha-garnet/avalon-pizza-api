@@ -77,6 +77,10 @@ public class OrdersController : ControllerBase
     /// <response code="400">Returned if the input payload is null, or if the route ID does not match the body payload ID.</response>
     /// <response code="422">Returned via exception handling if the order is no longer in a mutable 'Pending' state.</response>
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)] ///???
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order order)
     {
         if (order == null)
