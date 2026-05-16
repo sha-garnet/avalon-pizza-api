@@ -7,19 +7,19 @@ namespace AvalonPizza.Server.Services;
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
-    private readonly IToppingRepository _toppingRepository;
-    private readonly IPizzaSizeRepository _pizzaSizeRepository;
+    private readonly IToppingService _toppingService;
+    private readonly IPizzaSizeService _pizzaSizeService;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
         IOrderRepository orderRepository,
-        IToppingRepository toppingRepository,
-        IPizzaSizeRepository pizzaSizeRepository,
+        IToppingService toppingService,
+        IPizzaSizeService pizzaSizeService,
         ILogger<OrderService> logger)
     {
         _orderRepository = orderRepository;
-        _toppingRepository = toppingRepository;
-        _pizzaSizeRepository = pizzaSizeRepository;
+        _toppingService = toppingService;
+        _pizzaSizeService = pizzaSizeService;
         _logger = logger;
     }
 
@@ -28,54 +28,53 @@ public class OrderService : IOrderService
         return await _orderRepository.GetOrderByIdAsync(id);
     }
 
+    /// <summary>
+    /// Orchestrates the placement of a new customer pizza order.
+    /// Validates pricing on the server side before persisting the record to the database.
+    /// </summary>
+    /// <param name="order">The incoming order payload to process.</param>
+    /// <returns>The newly generated unique Order ID.</returns>
     public async Task<int> PlaceOrderAsync(Order order)
     {
-        var availableSizes = await _pizzaSizeRepository.GetAllAsync();
-        var availableToppings = await _toppingRepository.GetAllToppingsAsync();
-
-        var selectedSize = availableSizes.FirstOrDefault(s => s.SizeId == order.SizeId);
-        if (selectedSize == null)
-            throw new Exception("Invalid Pizza Size selected.");
-
-        decimal totalPrice = selectedSize.BasePrice;
-
-        foreach (var orderTopping in order.Toppings)
-        {
-            var toppingInfo = availableToppings.FirstOrDefault(t => t.ToppingId == orderTopping.ToppingId);
-            if (toppingInfo != null)
-            {
-                totalPrice += toppingInfo.ToppingPrice;
-            }
-        }
-
-        order.TotalPrice = totalPrice;
-
+        order.TotalPrice = await CalculatePriceAsync(order);
         return await _orderRepository.CreateOrderAsync(order);
     }
 
     public async Task UpdateOrderAsync(Order order)
     {
-        var availableSizes = await _pizzaSizeRepository.GetAllAsync();
-        var availableToppings = await _toppingRepository.GetAllToppingsAsync();
+        order.TotalPrice = await CalculatePriceAsync(order);
+        await _orderRepository.UpdateOrderAsync(order);
+    }
 
-        var selectedSize = availableSizes.FirstOrDefault(s => s.SizeId == order.SizeId);
-        if (selectedSize == null)
-            throw new Exception("Invalid Pizza Size selected.");
+    /// <summary>
+    /// Calculates the total verified server-side price for a given order payload.
+    /// Utilizes Redis cached lookup services to cross-reference sizes and toppings,
+    /// ensuring price integrity and guarding against client-side price tampering.
+    /// </summary>
+    /// <param name="order">The incoming order object containing the selected SizeId and Toppings collection.</param>
+    /// <returns>The total compounded price (<see cref="decimal"/>) including the base size price and all selected toppings.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown when the provided <paramref name="order.SizeId"/> or any structural <c>ToppingId</c> 
+    /// cannot be verified against the data store lookup records.
+    /// </exception>
+    private async Task<decimal> CalculatePriceAsync(Order order)
+    {
+        var availableSizes = await _pizzaSizeService.GetAllSizesAsync();
+        var availableToppings = await _toppingService.GetAllToppingsAsync();
+
+        var selectedSize = availableSizes.FirstOrDefault(s => s.SizeId == order.SizeId)
+            ?? throw new KeyNotFoundException($"Invalid Pizza Size ID '{order.SizeId}' selected.");
 
         decimal totalPrice = selectedSize.BasePrice;
 
         foreach (var orderTopping in order.Toppings)
         {
-            var toppingInfo = availableToppings.FirstOrDefault(t => t.ToppingId == orderTopping.ToppingId);
-            if (toppingInfo != null)
-            {
-                totalPrice += toppingInfo.ToppingPrice;
-            }
+            var toppingInfo = availableToppings.FirstOrDefault(t => t.ToppingId == orderTopping.ToppingId)
+                ?? throw new KeyNotFoundException($"Invalid Topping ID '{orderTopping.ToppingId}' selected.");
+            totalPrice += toppingInfo.ToppingPrice;
         }
 
-        order.TotalPrice = totalPrice;
-
-        await _orderRepository.UpdateOrderAsync(order);
+        return totalPrice;
     }
 
     public async Task UpdateOrderStatusAsync(int orderId, int statusId)

@@ -18,7 +18,9 @@ namespace AvalonPizza.Server.Models
         public string DeliveryAddress { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Size id is required.")]
+        [Range(1, int.MaxValue, ErrorMessage = "A valid, Pizza Size ID must be provided.")]
         public int? SizeId { get; set; }
+
         public decimal TotalPrice { get; set; }
         public OrderStatus StatusId { get; set; }
         public bool IsActive { get; set; }

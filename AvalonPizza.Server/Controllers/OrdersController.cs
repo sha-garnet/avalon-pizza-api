@@ -6,7 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace AvalonPizza.Server.Controllers;
 
 [ApiController]
-[Route("api/[controller]")] // This makes the URL: api/orders
+[Route("api/orders")]
+[Produces("application/json")]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -21,10 +22,11 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// 
+    /// Fetches a specific order and its associated toppings.
+    /// GET: /api/orders/{id}
     /// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+    /// <returns>Order</returns>
     [HttpGet("{id}")]
     public async Task<ActionResult<Order>> GetOrder(int id)
     {
@@ -39,37 +41,31 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// 
-    /// [FromBody]: This tells .NET to look at the request body for JSON and map it directly into your Order model
+    /// Places a new order.
+    /// POST: /api/orders
+    /// [FromBody]: tells .NET to look at the request body for JSON and map it directly into your Order model
     /// </summary>
     /// <param name="order"></param>
-    /// <returns></returns>
+    /// <returns>The newly created Order ID.</returns>
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(int))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<int>> CreateOrder([FromBody] Order order)
     {
-        try
+        if (order == null)
         {
-            // Basic validation
-            if (order == null || order.SizeId <= 0)
-            {
-                return BadRequest("Invalid order data provided.");
-            }
-
-            int newOrderId = await _orderService.PlaceOrderAsync(order);
-
-            // Returns a 201 Created status with the link to the new resource
-            // (Generates URL) It looks at your GetOrder method's route (api/orders/{id}) and fills in the {id} with your newOrderId
-            // It adds a Location field to the response metadata => Location: https://api.avalonpizza.com/api/orders/1024
-            return CreatedAtAction(nameof(GetOrder), new { id = newOrderId }, newOrderId);
+            return BadRequest("Order payload cannot be empty.");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while creating an order for {CustomerName}", order?.CustomerName);
-            return StatusCode(500, "An internal error occurred while processing your order.");
-        }
+
+        int newOrderId = await _orderService.PlaceOrderAsync(order);
+        // Returns HTTP 201 with Location header pointing to your GET endpoint
+        return CreatedAtAction(nameof(GetOrder), new { id = newOrderId }, newOrderId);
     }
 
     /// <summary>
+    /// Updates order pizza size and pizza toppings.
+    /// Only allowed if status is Pending in data store.
     /// PUT: api/orders/{id}
     /// </summary>
     /// <param name="id"></param>
@@ -78,21 +74,24 @@ public class OrdersController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order order)
     {
+        if (order == null)
+        {
+            return BadRequest("Order payload cannot be empty.");
+        }
+
         if (id != order.Id)
         {
             return BadRequest("ID mismatch between URL and body.");
         }
 
-        // The Service calls the Repo, which calls the Stored Proc.
-        // Our Middleware will catch any SQL Exceptions (like "Order not Pending").
         await _orderService.UpdateOrderAsync(order);
-
         return NoContent();
     }
 
     /// <summary>
+    /// Admin only operation
+    /// Updates the order lifecycle (e.g., Pending → Baking)
     /// PATCH: api/orders/{id}/status
-    /// Can only be invoked by ADMIN
     /// </summary>
     /// <param name="id"></param>
     /// <param name="statusId"></param>
@@ -106,6 +105,7 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Performs a soft-delete. Only allowed if status is Pending.
     /// DELETE: api/orders/{id}
     /// </summary>
     /// <param name="id"></param>

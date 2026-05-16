@@ -72,8 +72,8 @@ The API includes a **Custom Landing Page** at the root URL (`/`) which provides 
 | **GET** | `api/pizzas/sizes` | `usp_PizzaSizes_GetAll` | Retrieves all pizza sizes and base prices. Optimized with Redis caching. |
 | **GET** | `/api/orders/{id}` | `usp_Orders_GetById` | Fetches a specific order and its associated toppings via multiple result sets. |
 | **POST** | `/api/orders` | `usp_Orders_Insert` | Places a new order. Maps toppings using the `ToppingListType` UDTT. |
-| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). Validates Status ID. |
 | **PUT** | `/api/orders/{id}` | `usp_Orders_Update` | Updates order details and syncs toppings. Only allowed if status is `Pending`. |
+| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). Validates Status ID. |
 | **DELETE** | `/api/orders/{id}` | `usp_Orders_Delete` | Performs a soft-delete (sets `IsActive = 0`). Only allowed if status is `Pending`. |
 
 ### 🚨 The "State" Dictionary (SQL Error Mapping)

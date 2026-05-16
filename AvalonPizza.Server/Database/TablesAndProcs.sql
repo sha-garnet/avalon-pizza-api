@@ -95,9 +95,9 @@ BEGIN
     CREATE TABLE [dbo].[OrderToppings] (
         [OrderId]   INT NOT NULL,
         [ToppingId] INT NOT NULL,
-        CONSTRAINT [PK_OrderToppings] PRIMARY KEY (OrderId, ToppingId),
-        CONSTRAINT [FK_OrderToppings_Orders] FOREIGN KEY (OrderId) REFERENCES Orders(Id) ON DELETE CASCADE,
-        CONSTRAINT [FK_OrderToppings_Toppings] FOREIGN KEY (ToppingId) REFERENCES Toppings(ToppingId)
+        CONSTRAINT [PK_OrderToppings] PRIMARY KEY CLUSTERED (OrderId ASC, ToppingId ASC),
+        CONSTRAINT [FK_OrderToppings_Orders] FOREIGN KEY (OrderId) REFERENCES [dbo].[Orders]([Id]) ON DELETE CASCADE,
+        CONSTRAINT [FK_OrderToppings_Toppings] FOREIGN KEY (ToppingId) REFERENCES [dbo].[Toppings]([ToppingId])
     );
 END
 GO
@@ -221,6 +221,9 @@ BEGIN
             ;THROW 50003, 'One or more selected toppings do not exist.', 5;
         END
 
+        -- In-memory container to securely capture the identity generation
+        DECLARE @InsertedRows TABLE (OrderId INT);
+
         BEGIN TRANSACTION;
 
         INSERT INTO [dbo].[Orders] (
@@ -232,20 +235,21 @@ BEGIN
             [StatusId],
             [IsActive]
         )
+        OUTPUT inserted.Id INTO @InsertedRows (OrderId) -- key capture
         VALUES (
             @CustomerName,
             @PhoneNumber,
             @DeliveryAddress,
             @SizeId,
             @TotalPrice,
-            1,
-            1
+            1,-- Pending
+            1 -- Active
         );
 
-        -- Capture the New Order ID
-        -- SCOPE_IDENTITY() ensures that the order and its toppings are treated as a single "atomic" action. It either all works, or nothing changes
-        DECLARE @NewOrderId INT = SCOPE_IDENTITY();
+        DECLARE @NewOrderId INT;
+        SELECT TOP 1 @NewOrderId = OrderId FROM @InsertedRows;
 
+        -- Bulk insert child topping rows using the new verified parent identifier
         INSERT INTO [dbo].[OrderToppings] ([OrderId], [ToppingId])
         SELECT @NewOrderId, [ToppingId]
         FROM @Toppings;
@@ -266,9 +270,6 @@ GO
 -- Update Order
 CREATE OR ALTER PROCEDURE [dbo].[usp_Orders_Update]
     @OrderId         INT,
-    @CustomerName    NVARCHAR(100),
-    @PhoneNumber     NVARCHAR(20),
-    @DeliveryAddress NVARCHAR(500),
     @SizeId          INT,
     @TotalPrice      DECIMAL(18,2),
     @Toppings        [dbo].[ToppingListType] READONLY -- The new list of Topping IDs
@@ -294,10 +295,7 @@ BEGIN
 
         -- Update the main Order details
         UPDATE [dbo].[Orders]
-        SET [CustomerName] = @CustomerName,
-            [PhoneNumber] = @PhoneNumber,
-            [DeliveryAddress] = @DeliveryAddress,
-            [SizeId] = @SizeId,
+        SET [SizeId] = @SizeId,
             [TotalPrice] = @TotalPrice,
             [UpdatedAt] = SYSUTCDATETIME() AT TIME ZONE 'UTC'
         WHERE [Id] = @OrderId 
