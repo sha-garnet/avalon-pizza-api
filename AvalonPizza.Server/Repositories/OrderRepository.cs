@@ -17,10 +17,14 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <summary>
-    /// 
+    /// Retrieves a fully hydrated order record, including its child toppings collection, from the database.
+    /// Executes a single optimized round-trip leveraging multi-grid result streams.
     /// </summary>
-    /// <param name="orderId"></param>
-    /// <returns></returns>
+    /// <param name="orderId">The unique target identifier of the order to look up.</param>
+    /// <returns>
+    /// A task representing the asynchronous read operation. Returns the populated <see cref="Order"/> 
+    /// graph if found; otherwise, returns <see langword="null"/> if the record is missing or inactive.
+    /// </returns>
     public async Task<Order?> GetOrderByIdAsync(int orderId)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -77,15 +81,21 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <summary>
-    /// 
+    /// Synchronizes changes to an existing order's configuration within the database.
+    /// Passes updated components via a high-performance Table-Valued Parameter (TVP) 
+    /// to update child junction details atomically.
     /// </summary>
-    /// <param name="order"></param>
-    /// <returns></returns>
+    /// <param name="order">The updated order domain model containing target IDs, new size selection, and updated pricing.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous database execution.</returns>
+    /// <exception cref="System.Data.SqlClient.SqlException">
+    /// Thrown if database side-validation rejects the modification (e.g., the order state is no longer 'Pending').
+    /// </exception>
     public async Task UpdateOrderAsync(Order order)
     {
-        var toppingTable = CreateToppingDataTable(order.Toppings);
+        using var toppingTable = CreateToppingDataTable(order.Toppings);
 
         var parameters = new DynamicParameters();
+        parameters.Add("@OrderId", order.Id);
         parameters.Add("@SizeId", order.SizeId);
         parameters.Add("@TotalPrice", order.TotalPrice);
         parameters.Add("@Toppings", toppingTable.AsTableValuedParameter("dbo.ToppingListType"));
