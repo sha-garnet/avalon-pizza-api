@@ -22,12 +22,18 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Fetches a specific order and its associated toppings.
-    /// GET: /api/orders/{id}
+    /// Retrieves a comprehensive order profile by its unique identifier.
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns>Order</returns>
+    /// <remarks>
+    /// The resulting payload returns a fully hydrated object graph, containing the 
+    /// parent order metadata alongside its collection of associated child topping configurations.
+    /// </remarks>
+    /// <param name="id">The unique database identifier of the target order.</param>
+    /// <returns>The fully populated <see cref="Order"/> entity matching the specified identifier.</returns>
     [HttpGet("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Order))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Order>> GetOrder(int id)
     {
         var order = await _orderService.GetOrderDetailsAsync(id);
@@ -107,6 +113,7 @@ public class OrdersController : ControllerBase
     /// <returns></returns>
     [Authorize]
     [HttpPatch("{id}/status")]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] int statusId)
     {
         await _orderService.UpdateOrderStatusAsync(id, statusId);
@@ -120,6 +127,7 @@ public class OrdersController : ControllerBase
     /// <param name="id"></param>
     /// <returns></returns>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteOrder(int id)
     {
         await _orderService.DeleteOrderAsync(id);

@@ -23,6 +23,18 @@ public class OrderService : IOrderService
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the fully populated details of a specific order by its unique identifier.
+    /// </summary>
+    /// <remarks>
+    /// Acts as the core orchestration point for order data retrieval, passing the request 
+    /// down to the data access layer. Returns null if no matching active record is located.
+    /// </remarks>
+    /// <param name="id">The unique database identifier of the order to retrieve.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation, containing the populated <see cref="Order"/> 
+    /// graph if found; otherwise, <see langword="null"/>.
+    /// </returns>
     public async Task<Order?> GetOrderDetailsAsync(int id)
     {
         return await _orderRepository.GetOrderByIdAsync(id);

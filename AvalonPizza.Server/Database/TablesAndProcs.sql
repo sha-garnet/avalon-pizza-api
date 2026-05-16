@@ -181,11 +181,6 @@ BEGIN
     INNER JOIN [dbo].[OrderStatus] os ON o.[StatusId] = os.[StatusId]
     WHERE o.[Id] = @Id AND o.[IsActive] = 1;
 
-    IF @@ROWCOUNT = 0
-    BEGIN
-        ;THROW 50001, 'Order not found or inactive.', 1;
-    END
-
     SELECT
         t.[ToppingId],
         t.[ToppingName],
