@@ -40,6 +40,18 @@ public class OrderService : IOrderService
         return await _orderRepository.CreateOrderAsync(order);
     }
 
+    /// <summary>
+    /// Orchestrates the modification of an existing order's item components.
+    /// Integrity-checks and recalculates server-verified pricing before committing changes to the database.
+    /// </summary>
+    /// <param name="order">The updated domain order model containing the targeted modifications.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <exception cref="KeyNotFoundException">
+    /// Thrown if the target order identifier cannot be found, or if selected component lookups fail validation.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown if the database validation rejects the execution because the order is no longer in a mutable 'Pending' state.
+    /// </exception>
     public async Task UpdateOrderAsync(Order order)
     {
         order.TotalPrice = await CalculatePriceAsync(order);

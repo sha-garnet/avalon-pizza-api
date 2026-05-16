@@ -306,7 +306,8 @@ BEGIN
         IF @@ROWCOUNT = 0
         BEGIN
             -- We check if it exists at all to give a better error message
-            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
+            -- Use UPDLOCK to prevent rare concurrent state modification gaps during inspection (prevent unlikely rece condition)
+            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WITH (UPDLOCK) WHERE [Id] = @OrderId AND [StatusId] <> 1)
             BEGIN
                 ;THROW 50006, 'Order can only be modified while in Pending status.', 2;
             END

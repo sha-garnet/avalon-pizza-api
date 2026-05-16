@@ -64,13 +64,18 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Updates order pizza size and pizza toppings.
-    /// Only allowed if status is Pending in data store.
-    /// PUT: api/orders/{id}
+    /// Modifies the structural choices (size and toppings) of an existing pizza order.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="orderDto"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This operation is idempotent. Modifications are strictly restricted by business rules 
+    /// and will only be processed if the target order's current state is classified as 'Pending' (StatusId = 1).
+    /// </remarks>
+    /// <param name="id">The unique identifier of the order being targeted for modification.</param>
+    /// <param name="order">The updated order payload containing modified size and topping parameters.</param>
+    /// <returns>An <see cref="IActionResult"/> representing an HTTP 204 No Content response upon successful persistence.</returns>
+    /// <response code="204">Returned when the order was successfully verified, recalculation was performed, and data was updated.</response>
+    /// <response code="400">Returned if the input payload is null, or if the route ID does not match the body payload ID.</response>
+    /// <response code="422">Returned via exception handling if the order is no longer in a mutable 'Pending' state.</response>
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order order)
     {
