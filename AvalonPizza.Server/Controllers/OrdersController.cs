@@ -104,32 +104,57 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Admin only operation
-    /// Updates the order lifecycle (e.g., Pending → Baking)
-    /// PATCH: api/orders/{id}/status
+    /// Modifies the processing state of an existing order.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="statusId"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// This is an administrative operation locked behind authorization filters. It advances 
+    /// the order through its manufacturing lifecycle (e.g., 1 [Pending] → 2 [Baking] → 3 [Out for Delivery]).
+    /// </remarks>
+    /// <param name="id">The unique identifier of the targeted order.</param>
+    /// <param name="statusId">The target status lookup identifier to apply to the record.</param>
+    /// <returns>An <see cref="IActionResult"/> indicating a successful update footprint via 204 No Content.</returns>
     [Authorize]
     [HttpPatch("{id}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] int statusId)
     {
+        if (statusId <= 0)
+        {
+            return BadRequest("Invalid Status ID parameter specified.");
+        }
+
         await _orderService.UpdateOrderStatusAsync(id, statusId);
         return NoContent();
     }
 
     /// <summary>
-    /// Performs a soft-delete. Only allowed if status is Pending.
-    /// DELETE: api/orders/{id}
+    /// Performs a safe soft-delete on a targeted customer order.
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <remarks>
+    /// Deletion is strictly restricted by business rules. The operation will only succeed 
+    /// if the target order exists and its current state is 'Pending' (StatusId = 1). 
+    /// Records are soft-deleted by flipping their active status flag, maintaining historical audit integrity.
+    /// </remarks>
+    /// <param name="id">The unique database identifier of the order to be soft-deleted.</param>
+    /// <returns>An <see cref="IActionResult"/> indicating a successful soft-delete via 204 No Content.</returns>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteOrder(int id)
     {
+        // Simple defensive boundary check
+        if (id <= 0)
+        {
+            return BadRequest("Invalid order identifier specified.");
+        }
+
         await _orderService.DeleteOrderAsync(id);
         return NoContent();
     }

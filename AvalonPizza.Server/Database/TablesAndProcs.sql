@@ -377,7 +377,7 @@ BEGIN
         -- If the update failed, find out if it was the ID or the Status
         IF @@ROWCOUNT = 0
         BEGIN
-            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WHERE [Id] = @OrderId AND [StatusId] <> 1)
+            IF EXISTS(SELECT 1 FROM [dbo].[Orders] WITH (UPDLOCK) WHERE [Id] = @OrderId AND [StatusId] <> 1)
             BEGIN
                 ;THROW 50010, 'Order can only be modified while in Pending status.', 2;
             END

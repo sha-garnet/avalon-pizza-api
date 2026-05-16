@@ -131,11 +131,15 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <summary>
-    /// 
+    /// Persists a lifecycle state transition for a targeted customer order.
+    /// Executes validation checks against active order and status domains prior to mutation.
     /// </summary>
-    /// <param name="orderId"></param>
-    /// <param name="statusId"></param>
-    /// <returns></returns>
+    /// <param name="orderId">The unique database identifier of the target order resource.</param>
+    /// <param name="statusId">The lookup identifier representing the new state to apply.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous database execution state.</returns>
+    /// <exception cref="System.Data.SqlClient.SqlException">
+    /// Thrown if the target Status ID is invalid or if the Order ID cannot be resolved to an active record.
+    /// </exception>
     public async Task UpdateOrderStatusAsync(int orderId, int statusId)
     {
         using var connection = new SqlConnection(_connectionString);
@@ -147,10 +151,14 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <summary>
-    /// 
+    /// Executes a safe soft-delete on a targeted order by disabling its active state flag.
+    /// State mutability criteria are validated automatically within the storage tier.
     /// </summary>
-    /// <param name="orderId"></param>
-    /// <returns></returns>
+    /// <param name="orderId">The unique database identifier of the order targeted for removal.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous database execution state.</returns>
+    /// <exception cref="System.Data.SqlClient.SqlException">
+    /// Thrown if the order is no longer in a mutable 'Pending' state or if the identifier cannot be resolved.
+    /// </exception>
     public async Task DeleteOrderAsync(int orderId)
     {
         using var connection = new SqlConnection(_connectionString);

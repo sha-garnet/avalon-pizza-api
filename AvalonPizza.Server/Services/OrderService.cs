@@ -101,11 +101,30 @@ public class OrderService : IOrderService
         return totalPrice;
     }
 
+    /// <summary>
+    /// Orchestrates the state transition of an existing order within the system lifecycle.
+    /// </summary>
+    /// <remarks>
+    /// Dispatches the status update parameters to the data access layer. This operation 
+    /// serves as the foundational interceptor for lifecycle event triggers (e.g., customer notifications).
+    /// </remarks>
+    /// <param name="orderId">The unique database identifier of the order targeted for state modification.</param>
+    /// <param name="statusId">The target status identifier representing the new lifecycle state.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous orchestration operation.</returns>
     public async Task UpdateOrderStatusAsync(int orderId, int statusId)
     {
         await _orderRepository.UpdateOrderStatusAsync(orderId, statusId);
     }
 
+    /// <summary>
+    /// Coordinates the removal sequence of a targeted customer order.
+    /// </summary>
+    /// <remarks>
+    /// Acts as the orchestration gateway to pass the target identifier down to the data access layer.
+    /// Business rules governing mutability criteria (e.g., Pending state verification) are enforced down-stack.
+    /// </remarks>
+    /// <param name="orderId">The unique database identifier of the order targeted for soft-deletion.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous orchestration operation.</returns>
     public async Task DeleteOrderAsync(int orderId)
     {
         await _orderRepository.DeleteOrderAsync(orderId);
