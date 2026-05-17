@@ -157,7 +157,7 @@ public class Program
             </head>
             <body>
                 <div class='card'>
-                    <h1>🍕 Avalon Pizza API</h1>
+                    <h1>Avalon Pizza API</h1>
                     <p>Backend Status: <strong>Online</strong></p>
                     <div class='links'>
                         <a href='/swagger'>API Documentation (Swagger)</a>

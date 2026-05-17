@@ -19,10 +19,16 @@ public class ToppingsController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves all active toppings. Optimized with Redis caching.
-    /// GET: api/toppings
+    /// Retrieves a complete list of all active pizza toppings.
     /// </summary>
-    /// <returns>IEnumerable<Topping></returns>
+    /// <remarks>
+    /// This query is heavily optimized via a Redis distributed cache layer to minimize database round-trips. 
+    /// Use this endpoint to populate dynamic UI components, such as pizza configuration screens or ordering menus.
+    /// </remarks>
+    /// <returns>A collection containing all active <see cref="Topping"/> entities.</returns>
+    /// <response code="200">Returned successfully with the array of active topping configurations.</response>
+    /// <response code="404">Returned if the topping catalog is empty or temporarily unpopulated in the storage tier.</response>
+    /// <response code="500">Returned if an unhandled error occurs while communicating with the cache or database cluster.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<Topping>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

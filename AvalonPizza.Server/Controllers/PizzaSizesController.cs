@@ -21,10 +21,16 @@ public class PizzaSizesController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves all pizza sizes and base prices. Optimized with Redis caching.
-    /// GET: api/pizzas/sizes
+    /// Retrieves a complete list of all available pizza sizes and their corresponding base prices.
     /// </summary>
-    /// <returns>IEnumerable<PizzaSize></returns>
+    /// <remarks>
+    /// This lookup endpoint is backed by a Redis distributed cache layer to guarantee sub-millisecond response times. 
+    /// Use this resource to build size-selection UI controls and initiate base pricing calculations on the client application.
+    /// </remarks>
+    /// <returns>A collection containing all active <see cref="PizzaSize"/> options.</returns>
+    /// <response code="200">Returned successfully with the array of configured pizza sizes and pricing metrics.</response>
+    /// <response code="404">Returned if the catalog lookup tables are completely unpopulated in the storage tier.</response>
+    /// <response code="500">Returned if an unexpected error occurs while fetching data from the infrastructure or cache layers.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PizzaSize>))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
