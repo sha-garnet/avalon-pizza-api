@@ -2,12 +2,13 @@ using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Middleware;
-using AvalonPizza.Server.Profiles;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Data.SqlClient;
+using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -71,38 +72,53 @@ public class Program
         // Register AutoMapper
         builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
 
-        // SWAGGER
+        // SWAGGER (Swashbuckle)
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen(c =>
+        builder.Services.AddSwaggerGen(options =>
         {
-            c.SwaggerDoc("v1", new() { Title = "Avalon Pizza API", Version = "v1" });
+            // Generate the Swagger header
+            options.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Version = "v1",
+                Title = "Avalon Pizza API",
+                Description = "Dynamically generated API documentation using **Swashbuckle**!"
+            });
 
-            // 1. Define the Security Scheme (The "Lock")
-            c.AddSecurityDefinition("ApiKey", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            // The option to authorize
+            options.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
             {
                 Description = "Enter your API Key in the box below. Format: X-Api-Key: YOUR_KEY",
                 Name = "X-Api-Key", // The header name your middleware looks for
-                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
                 Scheme = "ApiKeyScheme"
             });
 
-            // 2. Apply the Security Requirement (The "Keycard")
-            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            // Apply the Security Requirement
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
-                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    new OpenApiSecurityScheme
                     {
-                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        Reference = new OpenApiReference
                         {
-                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                            Id = "ApiKey" // Must match the name defined above
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "ApiKey"
                         },
-                        In = Microsoft.OpenApi.Models.ParameterLocation.Header
+                        In = ParameterLocation.Header
                     },
                     new List<string>()
                 }
             });
+
+            // Feed XML comments into Swagger UI interface
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+            if (File.Exists(xmlPath))
+            {
+                options.IncludeXmlComments(xmlPath);
+            }
         });
 
         // Health Check
