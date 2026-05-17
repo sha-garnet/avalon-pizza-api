@@ -1,4 +1,6 @@
-﻿using AvalonPizza.Server.Interfaces.Repositories;
+﻿using AutoMapper;
+using AvalonPizza.Server.DTOs;
+using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
 
@@ -9,17 +11,20 @@ public class OrderService : IOrderService
     private readonly IOrderRepository _orderRepository;
     private readonly IToppingService _toppingService;
     private readonly IPizzaSizeService _pizzaSizeService;
+    private readonly IMapper _mapper;
     private readonly ILogger<OrderService> _logger;
 
     public OrderService(
         IOrderRepository orderRepository,
         IToppingService toppingService,
         IPizzaSizeService pizzaSizeService,
+        IMapper mapper,
         ILogger<OrderService> logger)
     {
         _orderRepository = orderRepository;
         _toppingService = toppingService;
         _pizzaSizeService = pizzaSizeService;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -46,8 +51,10 @@ public class OrderService : IOrderService
     /// </summary>
     /// <param name="order">The incoming order payload to process.</param>
     /// <returns>The newly generated unique Order ID.</returns>
-    public async Task<int> PlaceOrderAsync(Order order)
+    public async Task<int> PlaceOrderAsync(OrderRequest orderRequest)
     {
+        // convert OrderRequest DTO into the database Order entity
+        var order = _mapper.Map<Order>(orderRequest);
         order.TotalPrice = await CalculatePriceAsync(order);
         return await _orderRepository.CreateOrderAsync(order);
     }
@@ -64,8 +71,9 @@ public class OrderService : IOrderService
     /// <exception cref="InvalidOperationException">
     /// Thrown if the database validation rejects the execution because the order is no longer in a mutable 'Pending' state.
     /// </exception>
-    public async Task UpdateOrderAsync(Order order)
+    public async Task UpdateOrderAsync(int id, OrderRequest orderRequest)
     {
+        var order = _mapper.Map<Order>(orderRequest);
         order.TotalPrice = await CalculatePriceAsync(order);
         await _orderRepository.UpdateOrderAsync(order);
     }

@@ -1,7 +1,8 @@
-﻿using AvalonPizza.Server.Interfaces.Services;
+﻿using AvalonPizza.Server.DTOs;
+using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace AvalonPizza.Server.Controllers;
 
@@ -57,7 +58,7 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(int))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<int>> CreateOrder([FromBody] Order order)
+    public async Task<ActionResult<int>> CreateOrder([FromBody] OrderRequest order)
     {
         if (order == null)
         {
@@ -87,19 +88,14 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)] ///???
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateOrder(int id, [FromBody] Order order)
+    public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderRequest order)
     {
         if (order == null)
         {
             return BadRequest("Order payload cannot be empty.");
         }
 
-        if (id != order.Id)
-        {
-            return BadRequest("ID mismatch between URL and body.");
-        }
-
-        await _orderService.UpdateOrderAsync(order);
+        await _orderService.UpdateOrderAsync(id, order);
         return NoContent();
     }
 

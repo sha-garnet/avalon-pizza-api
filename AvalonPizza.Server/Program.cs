@@ -2,6 +2,7 @@ using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Middleware;
+using AvalonPizza.Server.Profiles;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -66,6 +67,9 @@ public class Program
         builder.Services.AddScoped<IPizzaSizeRepository, PizzaSizeRepository>();
         builder.Services.AddScoped<IPizzaSizeService, PizzaSizeService>();
         builder.Services.AddScoped<ICacheService, CacheService>();
+
+        // Register AutoMapper
+        builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
 
         // SWAGGER
         builder.Services.AddEndpointsApiExplorer();
