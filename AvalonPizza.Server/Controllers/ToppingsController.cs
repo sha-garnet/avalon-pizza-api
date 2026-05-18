@@ -19,18 +19,16 @@ public class ToppingsController : ControllerBase
     }
 
     /// <summary>
-    /// Retrieves a complete list of all active pizza toppings.
+    /// Retrieves a complete list of all active pizza toppings and their corresponding prices.
     /// </summary>
     /// <remarks>
-    /// This query is heavily optimized via a Redis distributed cache layer to minimize database round-trips. 
-    /// Use this endpoint to populate dynamic UI components, such as pizza configuration screens or ordering menus.
+    /// This query is optimized via a Redis distributed cache layer to minimize database round-trips.
     /// </remarks>
-    /// <returns>A collection containing all active <see cref="Topping"/> entities.</returns>
-    /// <response code="200">Returned successfully with the array of active topping configurations.</response>
-    /// <response code="404">Returned if the topping catalog is empty or temporarily unpopulated in the storage tier.</response>
-    /// <response code="500">Returned if an unhandled error occurs while communicating with the cache or database cluster.</response>
+    /// <response code="200">Returned successfully with the array of active topping configurations and pricing metrics.</response>
+    /// <response code="404">Returned if the topping catalog is empty in the storage tier.</response>
+    /// <response code="500">Returned if an unhandled server error occurs.</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<Topping>))]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<Topping>>> GetAll()
