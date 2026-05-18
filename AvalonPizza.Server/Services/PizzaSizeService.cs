@@ -10,7 +10,7 @@ public class PizzaSizeService : IPizzaSizeService
     private readonly IPizzaSizeRepository _pizzaSizeRepository;
     private readonly ICacheService _cacheService;
     private readonly ILogger<PizzaSizeService> _logger;
-    private const string SizesCacheKey = "PizzaSizeService_AllSizes";
+    private const string SizesCacheKey = "pizza:sizes:all";
 
     public PizzaSizeService(
         IPizzaSizeRepository sizeRepository,

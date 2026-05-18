@@ -10,7 +10,7 @@ public class ToppingService : IToppingService
     private readonly IToppingRepository _toppingRepository;
     private readonly ICacheService _cacheService;
     private readonly ILogger<ToppingService> _logger;
-    private const string ToppingsCacheKey = "ToppingService_AllToppings";
+    private const string ToppingsCacheKey = "pizza:toppings:all";
 
     public ToppingService(
         IToppingRepository toppingRepository,
