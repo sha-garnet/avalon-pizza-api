@@ -28,6 +28,11 @@ namespace AvalonPizza.Server.Middleware
                 _logger.LogError(ex, "A database error occurred.");
                 await HandleSqlExceptionAsync(context, ex);
             }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "A requested resource or catalog key lookup failed validation.");
+                await HandleKeyNotFoundExceptionAsync(context, ex);
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unhandled server error occurred.");
@@ -75,6 +80,20 @@ namespace AvalonPizza.Server.Middleware
             });
 
             return context.Response.WriteAsync(result);
+        }
+
+        private static Task HandleKeyNotFoundExceptionAsync(HttpContext context, KeyNotFoundException ex)
+        {
+            context.Response.ContentType = "application/json";
+
+            // When an ID lookup fails for sizing/toppings during validation, it represents a Bad Request
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(new
+            {
+                error = ex.Message, // Passes "Invalid Topping ID 'X' selected." back to the user
+                code = (int)HttpStatusCode.BadRequest
+            }));
         }
 
         private static Task HandleGeneralExceptionAsync(HttpContext context, Exception ex)

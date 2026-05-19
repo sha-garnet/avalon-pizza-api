@@ -65,13 +65,9 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<int>> CreateOrder([FromBody] OrderRequest order)
     {
-        if (order == null)
-        {
-            return BadRequest("Order payload cannot be empty.");
-        }
 
         int newOrderId = await _orderService.PlaceOrderAsync(order);
-        // Returns HTTP 201 with Location header pointing to your GET endpoint
+        // Returns HTTP 201 with Location header pointing to our GET endpoint
         return CreatedAtAction(nameof(GetOrder), new { id = newOrderId }, newOrderId);
     }
 

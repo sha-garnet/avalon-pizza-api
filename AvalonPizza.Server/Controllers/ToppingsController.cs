@@ -36,8 +36,8 @@ public class ToppingsController : ControllerBase
         var toppings = await _toppingService.GetAllToppingsAsync();
         if (toppings == null || !toppings.Any())
         {
-            _logger.LogError("Toppings requested but none were found in the database.");
-            return NotFound("Toppings are currently unavailable. Please check back later.");
+            _logger.LogError("Pizza toppings requested but none were found in the database.");
+            return NotFound("Pizza toppings are currently unavailable. Please check back later.");
         }
         return Ok(toppings);
     }
