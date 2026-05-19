@@ -4,6 +4,8 @@
 [![Database](https://img.shields.io/badge/Database-SQL%20Server-CC2927.svg?logo=microsoft-sql-server&logoColor=white)](https://www.microsoft.com/en-us/sql-server/)
 [![Cache](https://img.shields.io/badge/Cache-Redis-DC382D.svg?logo=redis&logoColor=white)](https://redis.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20WSL2-0078D4.svg?logo=windows&logoColor=white)]()
+[![Unit Tests](https://img.shields.io/badge/Testing-xUnit-blue.svg?logo=xunit&logoColor=white)]()
+[![Mocking Framework](https://img.shields.io/badge/Mocking-Moq-green.svg)]()
 
 A high-performance REST API built with .NET 10 and Dapper, optimized for sub-millisecond data retrieval. By utilizing a Database-First architecture with pre-compiled Stored Procedures and Redis distributed caching, the system minimizes database round-trips and eliminates ORM overhead. Features custom middleware for mapping SQL-state exceptions to granular HTTP responses, ensuring enterprise-grade reliability and observability.
 
@@ -60,20 +62,25 @@ A high-performance REST API built with .NET 10 and Dapper, optimized for sub-mil
       "ConnectionStrings": { ... }
     }
     ```
-### 📖 API Documentation
 
-The API includes a **Custom Landing Page** at the root URL (`/`) which provides immediate status updates on system health. Full interactive documentation is available via **Swagger**.
+### 📖 API Documentation & Sandbox
+
+The API is fully documented using **OpenAPI / Swagger (via Swashbuckle)**, parsing inline C# XML comments to reflect accurate payload schema models and operational HTTP response contracts.
+
+* 🌐 **Interactive Sandbox:** `http://localhost:<port>/swagger/index.html` (Available in Development mode)
+* 🏠 **Custom Landing Page:** Navigating to the root URL (`/`) provides a tailored view displaying direct application operational metadata and microservices dependency connectivity.
+
 
 ### Primary Endpoints
 
 | Method | Endpoint | SQL Procedure | Description |
 | :--- | :--- | :--- | :--- |
-| **GET** | `/api/toppings` | `usp_Toppings_GetAll` | Retrieves all active toppings. Optimized with Redis caching. |
-| **GET** | `api/pizzas/sizes` | `usp_PizzaSizes_GetAll` | Retrieves all pizza sizes and base prices. Optimized with Redis caching. |
+| **GET** | `/api/toppings` | `usp_Toppings_GetAll` | Retrieves all active toppings and prices. Optimized with Redis caching. |
+| **GET** | `/api/pizzas/sizes` | `usp_PizzaSizes_GetAll` | Retrieves all pizza sizes and base prices. Optimized with Redis caching. |
 | **GET** | `/api/orders/{id}` | `usp_Orders_GetById` | Fetches a specific order and its associated toppings via multiple result sets. |
-| **POST** | `/api/orders` | `usp_Orders_Insert` | Places a new order. Maps toppings using the `ToppingListType` UDTT. |
-| **PUT** | `/api/orders/{id}` | `usp_Orders_Update` | Updates order details and syncs toppings. Only allowed if status is `Pending`. |
-| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). Validates Status ID. |
+| **POST** | `/api/orders` | `usp_Orders_Insert` | Places a new order. |
+| **PUT** | `/api/orders/{id}` | `usp_Orders_Update` | Updates the order size and toppings. Only allowed if status is `Pending`. |
+| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). |
 | **DELETE** | `/api/orders/{id}` | `usp_Orders_Delete` | Performs a soft-delete (sets `IsActive = 0`). Only allowed if status is `Pending`. |
 
 ### 🚨 The "State" Dictionary (SQL Error Mapping)
@@ -87,3 +94,13 @@ This table maps the custom SQL `THROW` states to their corresponding business lo
 | **3** | **Validation** | The provided `StatusId` does not exist in the `OrderStatus` lookup table. | `400 Bad Request` |
 | **4** | **Validation** | Topping list is empty. Orders must have at least one topping. | `400 Bad Request` |
 | **5** | **Validation** | One or more `ToppingId` values provided do not exist in the database. | `400 Bad Request` |
+
+## 🧪 Testing Suite
+
+The solution features an isolated unit test architecture built on **xUnit** and **Moq**, designed to validate API pipeline boundaries, route results, and service layer caching workflows without database context cross-contamination.
+
+### Key Testing Strategies Demonstrated:
+
+* 🛠️ **AAA Pattern (Arrange, Act, Assert):** Standardized, clean test files prioritizing strict setup readability.
+* 📦 **Cache-Aside Boundary Testing:** Ensures the service layer fetches from Redis on cache hits and falls back to infrastructure tables only during cache misses.
+* 🎭 **Mocking Injected Dependencies:** Utilizing `Mock<T>` to isolate structural controllers from operational dependencies (`ILogger`, `IMapper`, or internal services).
