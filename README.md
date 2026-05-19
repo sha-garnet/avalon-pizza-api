@@ -67,9 +67,8 @@ A high-performance REST API built with .NET 10 and Dapper, optimized for sub-mil
 
 The API is fully documented using **OpenAPI / Swagger (via Swashbuckle)**, parsing inline C# XML comments to reflect accurate payload schema models and operational HTTP response contracts.
 
+* 🏠 **Custom Landing Page:** Navigating to the root URL (`/`) provides a tailored view displaying API Documentation and System Health Status `http://localhost:<port>/health`.
 * 🌐 **Interactive Sandbox:** `http://localhost:<port>/swagger/index.html` (Available in Development mode)
-* 🏠 **Custom Landing Page:** Navigating to the root URL (`/`) provides a tailored view displaying direct application operational metadata and microservices dependency connectivity.
-
 
 ### Primary Endpoints
 
