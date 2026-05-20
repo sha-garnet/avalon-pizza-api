@@ -22,10 +22,6 @@ public class ToppingService : IToppingService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all active toppings and prices
-    /// </summary>
-    /// <returns></returns>
     public async Task<IEnumerable<Topping>> GetAllToppingsAsync()
     {
         try

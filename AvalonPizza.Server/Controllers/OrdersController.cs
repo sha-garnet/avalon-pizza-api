@@ -1,7 +1,7 @@
-﻿using AvalonPizza.Server.DTOs;
+﻿using AvalonPizza.Server.Attributes;
+using AvalonPizza.Server.DTOs;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AvalonPizza.Server.Controllers;
@@ -39,6 +39,11 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Order>> GetOrder(int id)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { error = "Invalid order ID specified." });
+        }
+
         var order = await _orderService.GetOrderDetailsAsync(id);
 
         if (order == null)
@@ -65,7 +70,6 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<int>> CreateOrder([FromBody] OrderRequest order)
     {
-
         int newOrderId = await _orderService.PlaceOrderAsync(order);
         // Returns HTTP 201 with Location header pointing to our GET endpoint
         return CreatedAtAction(nameof(GetOrder), new { id = newOrderId }, newOrderId);
@@ -90,6 +94,11 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderRequest order)
     {
+        if (id <= 0)
+        {
+            return BadRequest(new { error = "Invalid order ID specified." });
+        }
+
         if (order == null)
         {
             return BadRequest("Order payload cannot be empty.");
@@ -107,27 +116,27 @@ public class OrdersController : ControllerBase
     /// the order through its manufacturing lifecycle (e.g., 1 [Pending] → 2 [Baking] → 3 [Out for Delivery]).
     /// </remarks>
     /// <param name="id">The unique identifier of the targeted order.</param>
-    /// <param name="statusId">The target status lookup identifier to apply to the record.</param>
+    /// <param name="statusRequest">The target status lookup identifier to apply to the record.</param>
     /// <response code="204">Status updated successfully.</response>
     /// <response code="400">Returned if the target statusId is invalid, or if trying to perform an illegal state transition (e.g., moving an order from 'Cancelled' back to 'Baking').</response>
     /// <response code="401">Returned if the request lacks a valid identity token or bearer authentication credentials.</response>
     /// <response code="404">Returned if no order matching the specified order ID can be located.</response>
     /// <response code="500">Returned if an unhandled server error occurs.</response>
-    [Authorize]
+    [ApiKeyRequired]
     [HttpPatch("{id}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] int statusId)
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] StatusRequest statusRequest)
     {
-        if (statusId <= 0)
+        if (id <= 0)
         {
-            return BadRequest("Invalid Status ID parameter specified.");
+            return BadRequest(new { error = "Invalid order ID specified." });
         }
 
-        await _orderService.UpdateOrderStatusAsync(id, statusId);
+        await _orderService.UpdateOrderStatusAsync(id, statusRequest);
         return NoContent();
     }
 
@@ -153,10 +162,9 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteOrder(int id)
     {
-        // Simple defensive boundary check
         if (id <= 0)
         {
-            return BadRequest("Invalid order identifier specified.");
+            return BadRequest(new { error = "Invalid order ID specified." });
         }
 
         await _orderService.DeleteOrderAsync(id);

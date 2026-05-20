@@ -150,17 +150,19 @@ public class Program
         // TODO mode out and create its own middleware class
         app.UseMiddleware<SqlExceptionMiddleware>();
 
-        // API Key Authentication
-        app.UseRouting(); // Identifies the endpoint (Public or [Authorize])
-        app.UseMiddleware<ApiKeyMiddleware>();
-
         // SQL Scripting => This runs every time you hit 'Start' in Visual Studio
         DbInitializer.Initialize(connectionString);
+
+        // Identifies which endpoint action route match the HTTP incoming path
+        app.UseRouting();
 
         // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
         app.UseCors(PizzaPolicy);
 
-        // Optional: Sets the default home page (localhost:xxxx/)
+        // AUTHENTICATION: Custom API key middleware
+        app.UseMiddleware<ApiKeyMiddleware>();
+
+        // Sets the landing page (localhost:xxxx/)
         app.MapGet("/", () => Results.Content(@"
             <!DOCTYPE html>
             <html>

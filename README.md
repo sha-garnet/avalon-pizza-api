@@ -79,7 +79,7 @@ The API is fully documented using **OpenAPI / Swagger (via Swashbuckle)**, parsi
 | **GET** | `/api/orders/{id}` | `usp_Orders_GetById` | Fetches a specific order and its associated toppings via multiple result sets. |
 | **POST** | `/api/orders` | `usp_Orders_Insert` | Places a new order. |
 | **PUT** | `/api/orders/{id}` | `usp_Orders_Update` | Updates the order size and toppings. Only allowed if status is `Pending`. |
-| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | Updates the order lifecycle (e.g., Pending → Baking). |
+| **PATCH** | `/api/orders/{id}/status` | `usp_Orders_UpdateStatus` | (ApiKeyRequired) Updates the order lifecycle (e.g., Pending → Baking). |
 | **DELETE** | `/api/orders/{id}` | `usp_Orders_Delete` | Performs a soft-delete (sets `IsActive = 0`). Only allowed if status is `Pending`. |
 
 ### 🚨 The "State" Dictionary (SQL Error Mapping)

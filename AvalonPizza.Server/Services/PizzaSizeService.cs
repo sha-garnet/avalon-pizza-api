@@ -22,11 +22,6 @@ public class PizzaSizeService : IPizzaSizeService
         _logger = logger;
     }
 
-    /// <summary>
-    /// Get all active pizza sizes and base prices
-    /// This service implementation is a classic example of the Cache-Aside Pattern.
-    /// </summary>
-    /// <returns></returns>
     public async Task<IEnumerable<PizzaSize>> GetAllSizesAsync()
     {
         try

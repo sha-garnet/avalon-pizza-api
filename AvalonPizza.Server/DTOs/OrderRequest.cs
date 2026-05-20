@@ -3,7 +3,7 @@
 namespace AvalonPizza.Server.DTOs;
 
 /// <summary>
-/// Data transfer object used to submit a new pizza or update order into the processing system.
+/// Data transfer object used to submit a new pizza order into the processing system.
 /// </summary>
 public class OrderRequest
 {

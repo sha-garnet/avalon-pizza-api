@@ -16,11 +16,6 @@ public class PizzaSizeRepository : IPizzaSizeRepository
             ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
     }
 
-    /// <summary>
-    /// Method asking to get all pizza sizes and their prices
-    /// return type is read-only and relatively static so IEnumerable return type is perfect
-    /// </summary>
-    /// <returns></returns>
     public async Task<IEnumerable<PizzaSize>> GetAllAsync()
     {
         using var connection = new SqlConnection(_connectionString);

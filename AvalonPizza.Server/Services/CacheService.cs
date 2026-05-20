@@ -1,5 +1,4 @@
 ﻿using AvalonPizza.Server.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
@@ -22,9 +21,6 @@ public class CacheService : ICacheService
     /// <summary>
     /// Get from Redis storage
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="key"></param>
-    /// <returns></returns>
     public async Task<T?> GetAsync<T>(string key) where T : class
     {
         try
@@ -52,11 +48,6 @@ public class CacheService : ICacheService
     /// <summary>
     /// Set the cache in Redis storage
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
-    /// <param name="absoluteExpiration"></param>
-    /// <returns></returns>
     public async Task SetAsync<T>(string key, T value, TimeSpan? absoluteExpiration = null) where T : class
     {
         if (value == null) return;
@@ -92,8 +83,6 @@ public class CacheService : ICacheService
     /// <summary>
     /// Cache Invalidation, delete the cache entry whenever a Create, Update, or Delete operation occurs
     /// </summary>
-    /// <param name="key"></param>
-    /// <returns></returns>
     public async Task RemoveAsync(string key)
     {
         try
