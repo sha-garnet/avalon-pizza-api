@@ -82,7 +82,7 @@ public class OrdersController : ControllerBase
     /// Modifications will only be processed if the target order's current state is classified as 'Pending' (StatusId = 1).
     /// </remarks>
     /// <param name="id">The unique identifier of the order being targeted for modification.</param>
-    /// <param name="order">The updated order payload containing modified size and topping parameters.</param>
+    /// <param name="updateRequest">The updated order payload containing modified size and topping parameters.</param>
     /// <response code="204">Returned when the order was successfully verified, recalculation was performed, and data was updated.</response>
     /// <response code="400">Returned if the request payload fails validation rules.</response>
     /// <response code="422">Returned if the order is no longer in a mutable 'Pending' state.</response>
@@ -92,19 +92,19 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateOrder(int id, [FromBody] OrderRequest order)
+    public async Task<IActionResult> UpdateOrder(int id, [FromBody] UpdateRequest updateRequest)
     {
         if (id <= 0)
         {
             return BadRequest(new { error = "Invalid order ID specified." });
         }
 
-        if (order == null)
+        if (updateRequest == null)
         {
             return BadRequest("Order payload cannot be empty.");
         }
 
-        await _orderService.UpdateOrderAsync(id, order);
+        await _orderService.UpdateOrderAsync(id, updateRequest);
         return NoContent();
     }
 

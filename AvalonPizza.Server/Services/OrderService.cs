@@ -41,9 +41,9 @@ public class OrderService : IOrderService
         return await _orderRepository.CreateOrderAsync(order);
     }
 
-    public async Task UpdateOrderAsync(int id, OrderRequest orderRequest)
+    public async Task UpdateOrderAsync(int id, UpdateRequest updateRequest)
     {
-        var order = _mapper.Map<Order>(orderRequest);
+        var order = _mapper.Map<Order>(updateRequest);
         order.Id = id;
         order.TotalPrice = await CalculatePriceAsync(order);
         await _orderRepository.UpdateOrderAsync(order);
