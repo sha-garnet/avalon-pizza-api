@@ -25,8 +25,6 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        //builder.WebHost.UseUrls("http://+:5000"); // maybe I need it
-
         // Logging
         var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
         // Configure Serilog
@@ -58,7 +56,7 @@ public class Program
             options.InstanceName = "AvalonPizza_";
         });
 
-        // Building Connection String using AWS Systems Manager > Parameter Store
+        // Building the Connection String using AWS Systems Manager > Parameter Store
         builder.Configuration.AddSystemsManager("/pizzaapi", new AWSOptions
         {
             Region = RegionEndpoint.GetBySystemName(builder.Configuration["AWS:Region"])
