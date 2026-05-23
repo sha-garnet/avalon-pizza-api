@@ -1,5 +1,6 @@
 ﻿using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Models;
+using AvalonPizza.Server.Options;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -10,10 +11,9 @@ public class ToppingRepository : IToppingRepository
 {
     private readonly string _connectionString;
 
-    public ToppingRepository(IConfiguration configuration)
+    public ToppingRepository(DatabaseOptions databaseOptions)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new ArgumentNullException(nameof(configuration), "Connection string 'DefaultConnection' not found.");
+        _connectionString = databaseOptions.ConnectionString;
     }
 
     public async Task<IEnumerable<Topping>> GetAllToppingsAsync()

@@ -1,7 +1,10 @@
+using Amazon;
+using Amazon.Extensions.NETCore.Setup;
 using AvalonPizza.Server.Interfaces;
 using AvalonPizza.Server.Interfaces.Repositories;
 using AvalonPizza.Server.Interfaces.Services;
 using AvalonPizza.Server.Middleware;
+using AvalonPizza.Server.Options;
 using AvalonPizza.Server.Repositories;
 using AvalonPizza.Server.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -21,6 +24,8 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        //builder.WebHost.UseUrls("http://+:5000"); // maybe I need it
 
         // Logging
         var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
@@ -53,9 +58,30 @@ public class Program
             options.InstanceName = "AvalonPizza_";
         });
 
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+        // Building Connection String using AWS Systems Manager > Parameter Store
+        builder.Configuration.AddSystemsManager("/pizzaapi", new AWSOptions
+        {
+            Region = RegionEndpoint.GetBySystemName(builder.Configuration["AWS:Region"])
+        });
+
+        var baseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-        builder.Services.AddSingleton(connectionString);
+
+        var user = builder.Configuration["DbUser"];
+        var pass = builder.Configuration["DbPassword"];
+        if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
+        {
+            throw new Exception("Failed to retrieve credentials from AWS Parameter Store.");
+        }
+
+        var connectionStringBuilder = new SqlConnectionStringBuilder(baseConnectionString)
+        {
+            UserID = user,
+            Password = pass,
+        };
+
+        var connectionString = connectionStringBuilder.ConnectionString;
+        builder.Services.AddSingleton(new DatabaseOptions { ConnectionString = connectionString });
 
         // Add services to the container.
         builder.Services.AddControllers();
@@ -124,7 +150,7 @@ public class Program
         // Health Check
         builder.Services.AddHealthChecks()
             .AddSqlServer(
-                connectionString: builder.Configuration.GetConnectionString("DefaultConnection")!,
+                connectionString: connectionString,
                 name: "SQL Server",
                 tags: new[] { "db", "sql" })
             .AddRedis(
