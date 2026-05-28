@@ -23,17 +23,30 @@ public class Program
 
     public static void Main(string[] args)
     {
+        // Using the Minimal Hosting Model
         var builder = WebApplication.CreateBuilder(args);
 
+
+        // AWS Serveless Lambda
+        // The Bridge that allows the app to respond to Lambda events
+        builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+
+
         // Logging
-        var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
+        // If running in Lambda, environment variable AWS_LAMBDA_FUNCTION_NAME will exist.
+        // Force logs to Console if in Lambda, otherwise use your file path.
+        var isLambda = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME"));
+        var loggerConfig = new LoggerConfiguration().WriteTo.Console();
+        if (isLambda)
+        {
+            var logPath = builder.Configuration["LoggingPaths:PizzaLog"]!; // ! Trust Me
+            loggerConfig.WriteTo.File(path: logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7);
+        }
         // Configure Serilog
-        Log.Logger = new LoggerConfiguration()
-        .WriteTo.Console()
-        .WriteTo.File(path: logPath, rollingInterval: RollingInterval.Day, retainedFileCountLimit: 7)
-        .CreateLogger();
+        Log.Logger = loggerConfig.CreateLogger();
         // Tell ASP.NET Core to use Serilog
         builder.Host.UseSerilog();
+
 
         // CORS
         var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
@@ -49,6 +62,7 @@ public class Program
             });
         });
 
+
         // Redis
         builder.Services.AddStackExchangeRedisCache(options =>
         {
@@ -56,14 +70,19 @@ public class Program
             options.InstanceName = "AvalonPizza_";
         });
 
+
         // Building the Connection String using AWS Systems Manager > Parameter Store
         builder.Configuration.AddSystemsManager("/pizzaapi", new AWSOptions
         {
             Region = RegionEndpoint.GetBySystemName(builder.Configuration["AWS:Region"])
         });
 
-        var baseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+        // Get from appsettings.json
+        //var baseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        //    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+        // Get from AWS
+        string baseConnectionString = GetRequiredEnvironmentVariable("DB_HOST");
 
         var user = builder.Configuration["DbUser"];
         var pass = builder.Configuration["DbPassword"];
@@ -72,14 +91,21 @@ public class Program
             throw new Exception("Failed to retrieve credentials from AWS Parameter Store.");
         }
 
-        var connectionStringBuilder = new SqlConnectionStringBuilder(baseConnectionString)
+        Console.WriteLine("=====================>" + baseConnectionString);
+
+        var connectionStringBuilder = new SqlConnectionStringBuilder()
         {
+            DataSource = baseConnectionString,
+            InitialCatalog = "PizzaStoreDb",
             UserID = user,
             Password = pass,
+            Encrypt = true,
+            TrustServerCertificate = false
         };
 
         var connectionString = connectionStringBuilder.ConnectionString;
         builder.Services.AddSingleton(new DatabaseOptions { ConnectionString = connectionString });
+
 
         // Add services to the container.
         builder.Services.AddControllers();
@@ -93,8 +119,10 @@ public class Program
         builder.Services.AddScoped<IPizzaSizeService, PizzaSizeService>();
         builder.Services.AddScoped<ICacheService, CacheService>();
 
+
         // Register AutoMapper
         builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
+
 
         // SWAGGER (Swashbuckle)
         builder.Services.AddEndpointsApiExplorer();
@@ -145,6 +173,7 @@ public class Program
             }
         });
 
+
         // Health Check
         builder.Services.AddHealthChecks()
             .AddSqlServer(
@@ -156,7 +185,11 @@ public class Program
                 name: "Redis Cache",
                 tags: new[] { "cache", "redis" });
 
+
+
         var app = builder.Build();
+
+
 
         // SWAGGER
         if (app.Environment.IsDevelopment())
@@ -291,5 +324,22 @@ public class Program
                 Log.Information("Database initialization completed successfully.");
             }
         }
+    }
+
+    /// <summary>
+    /// TODO: Move out of Program.cs
+    /// </summary>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public static string GetRequiredEnvironmentVariable(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException($"Critical configuration missing: Environment variable '{name}' was not set.");
+        }
+
+        return value;
     }
 }

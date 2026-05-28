@@ -32,6 +32,7 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+.aws-sam/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -361,3 +362,22 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# --- Custom Additions for Avalon Pizza ---
+# Secrets and Local Environment
+.env*
+secrets.json
+
+# Infrastructure Artifacts
+packaged.yaml
+template-out.yaml
+
+# System/IDE Extras
+.DS_Store
+.idea/
+.vscode/settings.json
+.vscode/launch.json
+
+# Local Dev Data
+*.db
+*.sqlite

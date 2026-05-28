@@ -7,10 +7,20 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
     <UserSecretsId>b7526c51-a7d6-4452-9e27-2cc5ef560741</UserSecretsId>
+
+      <!-- AWS Lambda -->
+      <AWSProjectType>Lambda</AWSProjectType>
+      <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
+      <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+      <!-- Generate ready to run images during publishing to improve cold start time. -->
+      <PublishReadyToRun>true</PublishReadyToRun>
+
+
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Amazon.Extensions.Configuration.SystemsManager" Version="7.1.0" />
+    <PackageReference Include="Amazon.Lambda.AspNetCoreServer.Hosting" Version="2.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
     <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageReference Include="AutoMapper" Version="16.1.1" />
@@ -24,7 +34,7 @@
 
   <ItemGroup>
     <None Update="Database\TablesAndProcs.sql">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Copy if newer</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
