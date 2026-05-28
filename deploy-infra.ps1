@@ -35,7 +35,7 @@ catch {
 
 Write-Host "Starting deployment for Avalon Pizza Base Infrastructure..." -ForegroundColor Cyan
 
-$TemplatePath = Join-Path -Path $PSScriptRoot -ChildPath "..\base-stack.template"
+$TemplatePath = "C:\Source\AvalonPizza\base-stack.template"
 # Retrieve the database username from AWS Systems Manager Parameter Store
 $dbUser = aws ssm get-parameter --name "/pizzaapi/DbUser" --query "Parameter.Value" --output text
 
