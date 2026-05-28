@@ -9,6 +9,8 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Validation successful!" -ForegroundColor Green
 
+
+
 # Verify AWS Connectivity
 Write-Host "Verifying AWS credentials..." -ForegroundColor Yellow
 
@@ -24,15 +26,15 @@ catch {
     exit 1
 }
 
+
+
 $S3Bucket = "avalon-pizza-deploy-sandbox-318724428478-ca-central-1"
 $StackName = "AvalonPizza-Api-Stack"
 
 Write-Host "Starting build and deploy process for $StackName..." -ForegroundColor Cyan
 
 # Build the .NET project
-dotnet build --configuration Release
-# SAM will see the output and use it when it builds the deployment package
-sam build
+sam build --build-arg "Configuration=Release"
 if ($LASTEXITCODE -ne 0) { Write-Error "Build failed!"; exit }
 
 # Deploy the application

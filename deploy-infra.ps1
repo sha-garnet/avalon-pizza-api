@@ -1,6 +1,8 @@
 # Stop the script if any command fails
 $ErrorActionPreference = "Stop"
 
+
+
 Write-Host "Validating CloudFormation template..." -ForegroundColor Yellow
 
 aws cloudformation validate-template --template-body file://base-stack.template
@@ -12,13 +14,15 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Validation successful!" -ForegroundColor Green
 
+
+
 # Verify AWS Connectivity
 Write-Host "Verifying AWS credentials..." -ForegroundColor Yellow
 
 try {
     $callerIdentity = aws sts get-caller-identity --output json | ConvertFrom-Json
     Write-Host "Successfully authenticated as:" -ForegroundColor Green
-    Write-Host "Account: $($callerIdentity.UserId)"
+    Write-Host "UserId: $($callerIdentity.UserId)"
     Write-Host "Account: $($callerIdentity.Account)"
     Write-Host "ARN: $($callerIdentity.Arn)"
 }
@@ -26,6 +30,8 @@ catch {
     Write-Error "AWS Authentication failed. Please check your credentials."
     exit 1
 }
+
+
 
 Write-Host "Starting deployment for Avalon Pizza Base Infrastructure..." -ForegroundColor Cyan
 
@@ -36,7 +42,7 @@ $dbUser = aws ssm get-parameter --name "/pizzaapi/DbUser" --query "Parameter.Val
 aws cloudformation deploy `
   --template-file base-stack.template `
   --stack-name AvalonPizza-Base-Stack `
-  --capabilities CAPABILITY_IAM `
+  --capabilities CAPABILITY_IAM ` # Required for creating IAM roles: Even if you aren't writing an AWS::IAM::Role resource in your JSON, AWS creates internal resources that trigger the need for that capability. 
   --region ca-central-1 `
   --parameter-overrides DbUser=$dbUser
 
