@@ -35,14 +35,15 @@ catch {
 
 Write-Host "Starting deployment for Avalon Pizza Base Infrastructure..." -ForegroundColor Cyan
 
+$TemplatePath = Join-Path -Path $PSScriptRoot -ChildPath "..\base-stack.template"
 # Retrieve the database username from AWS Systems Manager Parameter Store
 $dbUser = aws ssm get-parameter --name "/pizzaapi/DbUser" --query "Parameter.Value" --output text
 
 # Deploy the CloudFormation stack
 aws cloudformation deploy `
-  --template-file base-stack.template `
+  --template-file $TemplatePath `
   --stack-name AvalonPizza-Base-Stack `
-  --capabilities CAPABILITY_IAM ` # Required for creating IAM roles: Even if you aren't writing an AWS::IAM::Role resource in your JSON, AWS creates internal resources that trigger the need for that capability. 
+  --capabilities CAPABILITY_IAM `
   --region ca-central-1 `
   --parameter-overrides DbUser=$dbUser
 

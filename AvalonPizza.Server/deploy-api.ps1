@@ -30,21 +30,28 @@ catch {
 
 $S3Bucket = "avalon-pizza-deploy-sandbox-318724428478-ca-central-1"
 $StackName = "AvalonPizza-Api-Stack"
+$TemplatePath = "C:\Source\AvalonPizza\AvalonPizza.Server\serverless.template"
 
 Write-Host "Starting build and deploy process for $StackName..." -ForegroundColor Cyan
 
+dotnet publish --configuration Release --output ./publish
+
+if ($LASTEXITCODE -ne 0) { 
+    Write-Error "Dotnet build failed!"; exit 
+}
+
 # Build the .NET project
-sam build --build-arg "Configuration=Release"
+sam build --template-file serverless.template
 if ($LASTEXITCODE -ne 0) { Write-Error "Build failed!"; exit }
 
 # Deploy the application
 # SAM handles the package and upload to S3 automatically behind the scenes
 sam deploy `
-  --template-file serverless.template `
+  --template-file $TemplatePath `
   --stack-name $StackName `
   --s3-bucket $S3Bucket `
   --region ca-central-1 `
-  --capabilities CAPABILITY_IAM `  
+  --capabilities CAPABILITY_IAM `
   --no-confirm-changeset
 
 if ($LASTEXITCODE -eq 0) {
