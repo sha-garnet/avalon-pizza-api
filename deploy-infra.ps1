@@ -36,7 +36,7 @@ catch {
 # -----------------------------------------------------------------------------
 # Build and deploy the CloudFormation stack
 # -----------------------------------------------------------------------------
-Write-Host "Starting deployment for Avalon Pizza Base Infrastructure..." -ForegroundColor Cyan
+Write-Host "Starting deployment for Base Infrastructure..." -ForegroundColor Cyan
 
 # Retrieve the database username from AWS Systems Manager Parameter Store to pass as a parameter during deployment
 # DBInstance master username cant be dynamic, so we have to fetch it from parameter store and pass it as a parameter during deployment
