@@ -1,23 +1,33 @@
-﻿Write-Host "Validating CloudFormation template..." -ForegroundColor Yellow
+﻿# Stop the script if any command fails
+$ErrorActionPreference = "Stop"
 
-aws cloudformation validate-template --template-body file://serverless.template
+# -----------------------------------------------------------------------------
+# Setup variables for deployment
+# -----------------------------------------------------------------------------
+$apiProjectPath = "C:\Source\AvalonPizza\avalonpizza.server"
+$TemplatePath = "$apiProjectPath\serverless.template"
+$ConfigurationPath = "$apiProjectPath\aws-lambda-tools-defaults.json"
+$stackName = "AvalonPizza-Api-Stack"
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Template validation failed. Please check your JSON syntax."
-    exit 1
-}
+# -----------------------------------------------------------------------------
+# Validate the CloudFormation template before proceeding
+# -----------------------------------------------------------------------------
+Write-Host "Validating CloudFormation template..." -ForegroundColor Cyan
 
+aws cloudformation validate-template --template-body "file://$TemplatePath"
+
+if ($LASTEXITCODE -ne 0) { Write-Error "Template validation failed."; exit 1 }
 Write-Host "Validation successful!" -ForegroundColor Green
 
-
-
-# Verify AWS Connectivity
-Write-Host "Verifying AWS credentials..." -ForegroundColor Yellow
+# -----------------------------------------------------------------------------
+# Verify AWS credentials and permissions
+# -----------------------------------------------------------------------------
+Write-Host "Verifying AWS credentials..." -ForegroundColor Cyan
 
 try {
     $callerIdentity = aws sts get-caller-identity --output json | ConvertFrom-Json
     Write-Host "Successfully authenticated as:" -ForegroundColor Green
-    Write-Host "Account: $($callerIdentity.UserId)"
+    Write-Host "UserId: $($callerIdentity.UserId)"
     Write-Host "Account: $($callerIdentity.Account)"
     Write-Host "ARN: $($callerIdentity.Arn)"
 }
@@ -26,41 +36,16 @@ catch {
     exit 1
 }
 
+# -----------------------------------------------------------------------------
+# Build the .NET project and deploy using AWS .NET Global Tools
+# -----------------------------------------------------------------------------
+Write-Host "Starting build, optimization, and deploy process for $StackName..." -ForegroundColor Cyan
 
+# Clean previous build artifacts to ensure a fresh deployment
+Remove-Item -Path "$apiProjectPath\bin", "$apiProjectPath\obj" -Recurse -Force -ErrorAction SilentlyContinue
 
-$S3Bucket = "avalon-pizza-deploy-sandbox-318724428478-ca-central-1"
-$StackName = "AvalonPizza-Api-Stack"
-$TemplatePath = "C:\Source\AvalonPizza\AvalonPizza.Server\serverless.template"
+# The tool automatically pulls Stack, S3 Bucket, Region, and Template configs from aws-lambda-tools-defaults.json file
+dotnet lambda deploy-serverless --config-file "$ConfigurationPath"
+if ($LASTEXITCODE -ne 0) { Write-Error "Deployment failed!" exit 1 }
 
-Write-Host "Starting build and deploy process for $StackName..." -ForegroundColor Cyan
-
-dotnet publish --configuration Release --output ./publish
-
-if ($LASTEXITCODE -ne 0) { 
-    Write-Error "Dotnet build failed!"; exit 
-}
-
-# Build the .NET project
-sam build --template-file serverless.template
-if ($LASTEXITCODE -ne 0) { Write-Error "Build failed!"; exit }
-
-# Deploy the application
-# SAM handles the package and upload to S3 automatically behind the scenes
-sam deploy `
-  --template-file $TemplatePath `
-  --stack-name $StackName `
-  --s3-bucket $S3Bucket `
-  --region ca-central-1 `
-  --capabilities CAPABILITY_IAM `
-  --no-confirm-changeset
-
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "Deployment successful!" -ForegroundColor Green
-    
-    # Print the API URL after deployment
-    $apiUrl = aws cloudformation describe-stacks --stack-name $StackName --query "Stacks[0].Outputs[?OutputKey=='ApiURL'].OutputValue" --output text
-    Write-Host "API Endpoint: $apiUrl" -ForegroundColor Cyan
-
-} else {
-    Write-Host "Deployment failed!" -ForegroundColor Red
-}
+Write-Host "Deployment completed successfully!" -ForegroundColor Green

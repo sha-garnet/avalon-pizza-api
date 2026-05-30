@@ -18,7 +18,7 @@
       "Properties": {
         "Handler": "AvalonPizza::AvalonPizza.LambdaEntryPoint::FunctionHandlerAsync",
         "Runtime": "dotnet8",
-        "CodeUri": ".",
+        "CodeUri": "",
         "MemorySize": 512,
         "Timeout": 30,
         "Tags": {
