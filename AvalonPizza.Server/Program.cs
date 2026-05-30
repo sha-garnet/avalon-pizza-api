@@ -29,7 +29,7 @@ public class Program
 
         // AWS Serveless Lambda
         // The Bridge that allows the app to respond to Lambda events
-        builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
+        builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi);
 
 
         // Logging
