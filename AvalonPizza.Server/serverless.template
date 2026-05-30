@@ -1,0 +1,73 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Avalon Pizza API Serverless Deployment with tags",
+  "Resources": {
+    "MyApi": {
+      "Type": "AWS::Serverless::Api",
+      "Properties": {
+        "StageName": "sandbox",
+        "OpenApiVersion": "3.0.1",
+        "Tags": {
+          "Name": "avalon-pizza-api"
+        }
+      }
+    },
+    "AspNetCoreFunction": {
+      "Type": "AWS::Serverless::Function",
+      "Properties": {
+        "Handler": "AvalonPizza.Server",
+        "Runtime": "dotnet8",
+        "CodeUri": "",
+        "MemorySize": 512,
+        "Timeout": 30,
+        "Tags": {
+          "Name": "avalon-pizza-api-function"
+        },
+        "Environment": {
+          "Variables": {
+            "DB_HOST": { "Fn::ImportValue": "AvalonPizza-DbHostname" }
+          }
+        },
+        "VpcConfig": {
+          "SecurityGroupIds": [{ "Fn::ImportValue": "AvalonPizza-SgId" }],
+          "SubnetIds": [
+            { "Fn::ImportValue": "AvalonPizza-PrivateSubnet1Id" },
+            { "Fn::ImportValue": "AvalonPizza-PrivateSubnet2Id" }
+          ]
+        },
+        "Policies": [
+          "AWSLambdaBasicExecutionRole",
+          "AmazonSSMReadOnlyAccess",
+          "AWSLambdaVPCAccessExecutionRole"
+        ],
+        "Events": {
+          "ProxyResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/{proxy+}",
+              "Method": "ANY",
+              "RestApiId": { "Ref": "MyApi" }
+            }
+          },
+          "RootResource": {
+            "Type": "Api",
+            "Properties": {
+              "Path": "/",
+              "Method": "ANY",
+              "RestApiId": { "Ref": "MyApi" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiURL": {
+      "Description": "API endpoint URL",
+      "Value": {
+        "Fn::Sub": "https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/sandbox/"
+      }
+    }
+  }
+}

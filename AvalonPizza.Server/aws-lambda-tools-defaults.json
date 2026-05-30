@@ -1,0 +1,13 @@
+{
+  "Information": [
+    "This file provides default values for the deployment wizard inside Visual Studio and the AWS Lambda commands added to the .NET Core CLI."
+  ],
+  "profile": "default",
+  "region": "ca-central-1",
+  "configuration": "Release",
+  "framework": "net8.0",
+  "template": "c:\\Source\\AvalonPizza\\AvalonPizza.Server\\serverless.template",
+  "stack-name": "AvalonPizza-Api-Stack",
+  "function-architecture": "x86_64",
+  "s3-bucket": "avalon-pizza-deploy-sandbox-318724428478-ca-central-1"
+}

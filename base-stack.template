@@ -1,0 +1,134 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Avalon Pizza Base Infrastructure",
+  "Parameters": {
+    "DbUser": {
+      "Type": "String",
+      "Description": "The master username for the RDS instance"
+    }
+  },
+  "Resources": {
+    "MyVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-vpc" }]
+      }
+    },
+    "PrivateSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": "ca-central-1a",
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-private-subnet-1a" }]
+      }
+    },
+    "PrivateSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": "ca-central-1b",
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-private-subnet-1b" }]
+      }
+    },
+    "PrivateRouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-private-rt" }]
+      }
+    },
+    "Subnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet1" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+    "Subnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": { "Ref": "PrivateSubnet2" },
+        "RouteTableId": { "Ref": "PrivateRouteTable" }
+      }
+    },
+    "AvalonAppTrustedSG": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow access to RDS and SSM endpoint",
+        "VpcId": { "Ref": "MyVPC" },
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-sg" }]
+      }
+    },
+    "SelfReferencingIngress": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": { "Ref": "AvalonAppTrustedSG" },
+        "IpProtocol": "-1",
+        "SourceSecurityGroupId": { "Ref": "AvalonAppTrustedSG" }
+      }
+    },
+    "MyDBSubnetGroup": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "Private subnets for RDS",
+        "SubnetIds": [{ "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" }],
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-db-subnet-group" }]
+      }
+    },
+    "AvalonPizzaDb": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "DBInstanceClass": "db.t3.micro",
+        "MultiAZ": false,
+        "PubliclyAccessible": false,
+        "StorageEncrypted": true,
+        "Engine": "sqlserver-ex",
+        "AllocatedStorage": "20",
+        "DBSubnetGroupName": { "Ref": "MyDBSubnetGroup" },
+        "VPCSecurityGroups": [{ "Ref": "AvalonAppTrustedSG" }],
+        "MasterUsername": { "Ref": "DbUser" },
+        "MasterUserPassword": "{{resolve:ssm-secure:/pizzaapi/DbPassword:1}}",
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-db-instance" }]
+      }
+    },
+    "SSMEndpoint": {
+      "Type": "AWS::EC2::VPCEndpoint",
+      "Properties": {
+        "VpcId": { "Ref": "MyVPC" },
+        "ServiceName": { "Fn::Sub": "com.amazonaws.${AWS::Region}.ssm" },
+        "VpcEndpointType": "Interface",
+        "PrivateDnsEnabled": true,
+        "SubnetIds": [{ "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" }],
+        "SecurityGroupIds": [{ "Ref": "AvalonAppTrustedSG" }],
+        "Tags": [{ "Key": "Name", "Value": "avalon-pizza-ssm-endpoint" }]
+      }
+    }
+  },
+  "Outputs": {
+    "VpcId": {
+      "Value": { "Ref": "MyVPC" },
+      "Export": { "Name": "AvalonPizza-VpcId" }
+    },
+    "PrivateSubnet1Id": { 
+      "Value": { "Ref": "PrivateSubnet1" },
+      "Export": { "Name": "AvalonPizza-PrivateSubnet1Id" }
+    },
+    "PrivateSubnet2Id": { 
+      "Value": { "Ref": "PrivateSubnet2" },
+      "Export": { "Name": "AvalonPizza-PrivateSubnet2Id" }
+    },
+    "AvalonAppTrustedSGId": {
+      "Value": { "Ref": "AvalonAppTrustedSG" },
+      "Export": { "Name": "AvalonPizza-SgId" }
+    },
+    "DbHostname": {
+      "Value": { "Fn::GetAtt": ["AvalonPizzaDb", "Endpoint.Address"] },
+      "Export": { "Name": "AvalonPizza-DbHostname" }
+    }
+  }
+}
