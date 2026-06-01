@@ -6,6 +6,7 @@
   <Folder Name="/Solution Items/">
     <File Path="README.md" />
   </Folder>
+  <Project Path="AvalonPizza.Migrator/AvalonPizza.Migrator.csproj" Id="b7e949cd-e0ec-40df-afb8-e799afb1f650" />
   <Project Path="AvalonPizza.Server/AvalonPizza.Server.csproj" />
   <Project Path="AvalonPizza.Tests/AvalonPizza.Tests.csproj" Id="2edeb633-d87d-4f7c-909a-137a80bfc11d" />
 </Solution>

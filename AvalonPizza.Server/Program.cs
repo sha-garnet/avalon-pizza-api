@@ -91,8 +91,6 @@ public class Program
             throw new Exception("Failed to retrieve credentials from AWS Parameter Store.");
         }
 
-        Console.WriteLine("=====================>" + baseConnectionString);
-
         var connectionStringBuilder = new SqlConnectionStringBuilder()
         {
             DataSource = baseConnectionString,
