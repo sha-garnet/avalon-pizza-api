@@ -62,7 +62,7 @@ public class Program
         });
 
 
-        // Redis
+        // Redis... TODO: will not work in a Lambda function figure out a solution for this. 
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
@@ -215,7 +215,7 @@ public class Program
         // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
         app.UseCors(PizzaPolicy);
 
-        // AUTHENTICATION: Custom API key middleware
+        // AUTHENTICATION: Custom API key middleware - TODO replace with proper authentication and authorization solution (like JWT tokens with ASP.NET Core Identity)
         app.UseMiddleware<ApiKeyMiddleware>();
 
         // Sets the landing page (localhost:xxxx/)
