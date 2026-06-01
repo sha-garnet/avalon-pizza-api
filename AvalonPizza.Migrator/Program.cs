@@ -23,7 +23,7 @@ internal class Program
             // Get from AWS
             string baseConnectionString = GetRequiredEnvironmentVariable("DB_HOST");
 
-            var user = configuration["DbUser"];
+            var user = configuration["DbUser"]; // user needs DDL (Data Definition Language: CREATE, ALTER, DROP) permissions to create the database if it doesn't exist, and to run the migration scripts which typically include CREATE TABLE, ALTER TABLE, etc.
             var pass = configuration["DbPassword"];
             if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
             {
