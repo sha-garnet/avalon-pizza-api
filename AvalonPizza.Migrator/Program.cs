@@ -13,6 +13,8 @@ internal class Program
     {
         try
         {
+            var isDevelopment = string.Equals(Environment.GetEnvironmentVariable("ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+
             // Configuration Builder follows the builder pattern, allowing us to add multiple configuration sources in a flexible way.
             // The build() at the end compiles all the sources into a single configuration object finalizing the setup.
             var configuration = new ConfigurationBuilder()
@@ -34,10 +36,10 @@ internal class Program
             {
                 DataSource = baseConnectionString,
                 InitialCatalog = "master",
-                UserID = user,
-                Password = pass,
+                UserID = isDevelopment ? string.Empty : user,
+                Password = isDevelopment ? string.Empty : pass,
                 Encrypt = true,
-                TrustServerCertificate = false
+                TrustServerCertificate = isDevelopment
             };
 
             // Ensure the database exists before trying to run migrations against it. If it doesn't exist, create it.
