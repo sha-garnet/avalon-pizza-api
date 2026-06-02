@@ -14,6 +14,7 @@ Write-Host "Validating CloudFormation template..." -ForegroundColor Cyan
 aws cloudformation validate-template --template-body "file://$TemplatePath"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "Template validation failed."; exit 1 }
+
 Write-Host "Validation successful!" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
@@ -32,6 +33,8 @@ catch {
     Write-Error "AWS Authentication failed. Please check your credentials."
     exit 1
 }
+
+write-Host "AWS credentials verified successfully!" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
 # Build and deploy the CloudFormation stack
