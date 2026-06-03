@@ -72,6 +72,7 @@
     "PublicRoute": {
       "Type": "AWS::EC2::Route",
       "Condition": "IsPublic",
+      "DependsOn": "VPCGatewayAttachment",
       "Properties": {
         "RouteTableId": { "Ref": "PrivateRouteTable" },
         "DestinationCidrBlock": "0.0.0.0/0",
@@ -129,6 +130,7 @@
     },
     "AvalonPizzaDb": {
       "Type": "AWS::RDS::DBInstance",
+      "DependsOn": ["VPCGatewayAttachment"],
       "Properties": {
         "DBInstanceClass": "db.t3.micro",
         "MultiAZ": false,
@@ -153,6 +155,15 @@
         "SubnetIds": [{ "Ref": "PrivateSubnet1" }, { "Ref": "PrivateSubnet2" }],
         "SecurityGroupIds": [{ "Ref": "AvalonAppTrustedSG" }],
         "Tags": [{ "Key": "Name", "Value": "avalon-pizza-ssm-endpoint" }]
+      }
+    },
+    "DbHostnameParameter": {
+      "Type": "AWS::SSM::Parameter",
+      "DependsOn": "AvalonPizzaDb",
+      "Properties": {
+        "Name": "/pizzaapi/DbHostname",
+        "Type": "String",
+        "Value": { "Fn::GetAtt": ["AvalonPizzaDb", "Endpoint.Address"] }
       }
     }
   },

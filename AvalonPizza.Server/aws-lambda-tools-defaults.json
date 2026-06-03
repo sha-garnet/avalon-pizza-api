@@ -11,9 +11,5 @@
   "template": "c:\\Source\\AvalonPizza\\AvalonPizza.Server\\serverless.template",
   "stack-name": "AvalonPizza-Api-Stack",
   "function-architecture": "x86_64",
-  "s3-bucket": "avalon-pizza-deploy-sandbox-318724428478-ca-central-1",
-  "template-parameters": {
-    "NetworkType": "Public",
-    "MyLocalIp": "24.212.173.78/32"
-  }
+  "s3-bucket": "avalon-pizza-deploy-sandbox-318724428478-ca-central-1"
 }

@@ -47,7 +47,8 @@ write-Host "AWS credentials verified successfully!" -ForegroundColor Green
 
 Write-Host "Running database migrations..." -ForegroundColor Cyan
 
-dotnet run --project "C:\Source\AvalonPizza\AvalonPizza.Migrator\AvalonPizza.Migrator.csproj" --configuration Release
+dotnet run --project "C:\Source\AvalonPizza\AvalonPizza.Migrator\AvalonPizza.Migrator.csproj" `
+--configuration Release -- --environment Production
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Database migration failed! Deployment aborted."

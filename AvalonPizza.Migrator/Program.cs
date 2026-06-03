@@ -13,7 +13,13 @@ internal class Program
     {
         try
         {
-            var isDevelopment = string.Equals(Environment.GetEnvironmentVariable("ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+            var isDevelopment = true;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--environment" && i + 1 < args.Length)
+                    isDevelopment = args[++i].Equals("Development", StringComparison.OrdinalIgnoreCase);
+            }
 
             // Configuration Builder follows the builder pattern, allowing us to add multiple configuration sources in a flexible way.
             // The build() at the end compiles all the sources into a single configuration object finalizing the setup.
@@ -22,15 +28,16 @@ internal class Program
                 .AddSystemsManager("/pizzaapi", new AWSOptions { Region = RegionEndpoint.CACentral1 })
                 .Build();
 
-            // Get from AWS
-            string baseConnectionString = GetRequiredEnvironmentVariable("DB_HOST");
-
-            var user = configuration["DbUser"]; // user needs DDL (Data Definition Language: CREATE, ALTER, DROP) permissions to create the database if it doesn't exist, and to run the migration scripts which typically include CREATE TABLE, ALTER TABLE, etc.
+            var user = configuration["DbUser"]; // TODO: user needs DDL (Data Definition Language: CREATE, ALTER, DROP) permissions to create the database if it doesn't exist, and to run the migration scripts which typically include CREATE TABLE, ALTER TABLE, etc.
             var pass = configuration["DbPassword"];
-            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass))
+            var dbHost = configuration["DbHostname"];
+
+            if (string.IsNullOrEmpty(user) || string.IsNullOrEmpty(pass) || string.IsNullOrEmpty(dbHost))
             {
-                throw new Exception("Failed to retrieve credentials from AWS Parameter Store.");
+                throw new Exception("Failed to retrieve configuration from AWS Parameter Store.");
             }
+
+            var baseConnectionString = isDevelopment ? "(localdb)\\MSSQLLocalDB" : dbHost;
 
             var connectionStringBuilder = new SqlConnectionStringBuilder()
             {
@@ -39,7 +46,7 @@ internal class Program
                 UserID = isDevelopment ? string.Empty : user,
                 Password = isDevelopment ? string.Empty : pass,
                 Encrypt = true,
-                TrustServerCertificate = isDevelopment
+                TrustServerCertificate = true
             };
 
             // Ensure the database exists before trying to run migrations against it. If it doesn't exist, create it.
@@ -96,22 +103,5 @@ internal class Program
 
             return 1; // return 1 so Jenkins knows the build failed
         }
-    }
-
-    /// <summary>
-    /// TODO: Move out of Program.cs
-    /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public static string GetRequiredEnvironmentVariable(string name)
-    {
-        var value = Environment.GetEnvironmentVariable(name);
-
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException($"Critical configuration missing: Environment variable '{name}' was not set.");
-        }
-
-        return value;
     }
 }

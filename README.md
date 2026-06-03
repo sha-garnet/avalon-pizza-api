@@ -1,20 +1,20 @@
 # 🍕 AvalonPizza Server API
 
-[![Build Status](https://img.shields.io/badge/.NET-10.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![Build Status](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Database](https://img.shields.io/badge/Database-SQL%20Server-CC2927.svg?logo=microsoft-sql-server&logoColor=white)](https://www.microsoft.com/en-us/sql-server/)
 [![Cache](https://img.shields.io/badge/Cache-Redis-DC382D.svg?logo=redis&logoColor=white)](https://redis.io/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20WSL2-0078D4.svg?logo=windows&logoColor=white)]()
 [![Unit Tests](https://img.shields.io/badge/Testing-xUnit-blue.svg?logo=xunit&logoColor=white)]()
 [![Mocking Framework](https://img.shields.io/badge/Mocking-Moq-green.svg)]()
 
-A high-performance REST API built with .NET 10 and Dapper, optimized for sub-millisecond data retrieval. By utilizing a Database-First architecture with pre-compiled Stored Procedures and Redis distributed caching, the system minimizes database round-trips and eliminates ORM overhead. Features custom middleware for mapping SQL-state exceptions to granular HTTP responses, ensuring enterprise-grade reliability and observability.
+A high-performance REST API built with .NET 8 and Dapper, optimized for sub-millisecond data retrieval. By utilizing a Database-First architecture with pre-compiled Stored Procedures and Redis distributed caching, the system minimizes database round-trips and eliminates ORM overhead. Features custom middleware for mapping SQL-state exceptions to granular HTTP responses, ensuring enterprise-grade reliability and observability.
 
 ## 📌 Project Overview
 *   **Purpose:** A production-grade backend foundation for a scalable order management system, designed to demonstrate high-performance architectural patterns.
-*   **Key Focus:** Showcasing the synergy between modern **.NET 10** features and optimized **SQL Server** stored procedures.
+*   **Key Focus:** Showcasing the synergy between modern **.NET 8** features and optimized **SQL Server** stored procedures.
 *   **Architecture:** Clean separation of concerns using the **Repository Pattern**, a dedicated **Service Layer**, and **Global Exception Middleware** for centralized error handling.
 *   **Data Strategy:** A high-speed **Dapper-based** approach utilizing User-Defined Table Types (UDTTs) to minimize database round-trips.
-*   **Primary Tech Stack:** C#, .NET 10, SQL Server, Redis, Docker Desktop (WSL 2).
+*   **Primary Tech Stack:** C#, .NET 8, SQL Server, Redis, Docker Desktop (WSL 2).
 
 ## 🛠️ Key Architectural Features
 *   **Distributed Caching:** Reduced DB load by caching static data (Toppings, Sizes, prices) in Redis.
@@ -29,7 +29,7 @@ A high-performance REST API built with .NET 10 and Dapper, optimized for sub-mil
 
 ### Prerequisites
 *   **OS:** Windows 11 + **WSL 2** (Ubuntu).
-*   **Runtime:** [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+*   **Runtime:** [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 *   **Containerization:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (WSL 2 Backend enabled).
 *   **Database:** SQL Server (LocalDB or Express).
 
