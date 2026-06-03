@@ -17,7 +17,7 @@
 
     <PublishTrimmed>false</PublishTrimmed>
 
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization> <!-- Not supported in AWS Lambda -->
 
   </PropertyGroup>
 

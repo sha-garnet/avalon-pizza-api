@@ -17,6 +17,7 @@ Write-Host "Validating CloudFormation template..." -ForegroundColor Cyan
 aws cloudformation validate-template --template-body "file://$TemplatePath"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "Template validation failed."; exit 1 }
+
 Write-Host "Validation successful!" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
@@ -35,6 +36,26 @@ catch {
     Write-Error "AWS Authentication failed. Please check your credentials."
     exit 1
 }
+
+write-Host "AWS credentials verified successfully!" -ForegroundColor Green
+
+# -----------------------------------------------------------------------------
+# Run database migrations before deployment to ensure the database schema is up-to-date
+# TODO: Consider moving this logic into a CI/CD pipeline or some other orchestration approach in the future,
+# especially as we transition to a more secure architecture with the database in a PRIVATE SUBNET. 
+# -----------------------------------------------------------------------------
+
+Write-Host "Running database migrations..." -ForegroundColor Cyan
+
+dotnet run --project "C:\Source\AvalonPizza\AvalonPizza.Migrator\AvalonPizza.Migrator.csproj" `
+--configuration Release -- --environment Production
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Database migration failed! Deployment aborted."
+    exit 1
+}
+
+Write-Host "Database migration successful!" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
 # Build the .NET project and deploy using AWS .NET Global Tools

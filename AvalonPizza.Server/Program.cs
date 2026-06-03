@@ -13,7 +13,6 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Reflection;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace AvalonPizza.Server;
 
@@ -63,7 +62,7 @@ public class Program
         });
 
 
-        // Redis
+        // Redis... TODO: will not work in a Lambda function figure out a solution for this. 
         builder.Services.AddStackExchangeRedisCache(options =>
         {
             options.Configuration = builder.Configuration.GetConnectionString("RedisConnection");
@@ -91,7 +90,10 @@ public class Program
             throw new Exception("Failed to retrieve credentials from AWS Parameter Store.");
         }
 
-        Console.WriteLine("=====================>" + baseConnectionString);
+        // TODO: Now that the API doesn't need to create the database, ensure the database credentials stored in
+        // your AWS Systems Manager Parameter Store only grant DML permissions
+        // (Data Manipulation Language: CRUD - restrict your API's database user to only SELECT, INSERT, UPDATE, and DELETE permissions)
+        // to the AvalonPizza database, and absolutely no DDL permissions (Data Definition Language: Create/Drop/Alter)
 
         var connectionStringBuilder = new SqlConnectionStringBuilder()
         {
@@ -207,16 +209,13 @@ public class Program
         // TODO mode out and create its own middleware class
         app.UseMiddleware<SqlExceptionMiddleware>();
 
-        // SQL Scripting => This runs every time you hit 'Start' in Visual Studio
-        DbInitializer.Initialize(connectionString);
-
         // Identifies which endpoint action route match the HTTP incoming path
         app.UseRouting();
 
         // Useing the CORS Policy: UseCors must be placed AFTER UseRouting (if used) and BEFORE MapControllers
         app.UseCors(PizzaPolicy);
 
-        // AUTHENTICATION: Custom API key middleware
+        // AUTHENTICATION: Custom API key middleware - TODO replace with proper authentication and authorization solution (like JWT tokens with ASP.NET Core Identity)
         app.UseMiddleware<ApiKeyMiddleware>();
 
         // Sets the landing page (localhost:xxxx/)
@@ -273,57 +272,6 @@ public class Program
         });
 
         app.Run();
-    }
-
-    /// <summary>
-    /// SQL Scripting / Database Schema Scripting
-    /// </summary>
-    public static class DbInitializer
-    {
-        public static void Initialize(string connectionString)
-        {
-            Log.Information("Database initialization started using master catalog.");
-
-            string scriptPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Database", "TablesAndProcs.sql");
-            if (!File.Exists(scriptPath))
-            {
-                throw new FileNotFoundException($"Could not find the SQL script at: {scriptPath}");
-            }
-            var script = File.ReadAllText(scriptPath);
-
-            // First, connect to 'master' to ensure the database exists
-            var builder = new SqlConnectionStringBuilder(connectionString)
-            {
-                // You cannot create a database called AvalonPizza while you are connected to AvalonPizza.
-                // You have to connect to master first to run the CREATE DATABASE command.
-                InitialCatalog = "master"
-            };
-            var masterConnection = builder.ConnectionString;
-
-            using (var conn = new SqlConnection(masterConnection))
-            {
-                conn.Open();
-
-                // SQL scripts with 'GO' commands need to be split because
-                // Splitting SQL scripts by the word "GO" is tricky because "GO" can appear inside words like CATEGORY, DOG, or within comments
-                // ADO.NET doesn't understand the 'GO' keyword
-                string pattern = @"^\s*GO\s*$";
-                var batches = Regex.Split(script, pattern, RegexOptions.Multiline | RegexOptions.IgnoreCase);
-
-                foreach (var batch in batches)
-                {
-                    string trimmedBatch = batch.Trim();
-                    if (string.IsNullOrWhiteSpace(trimmedBatch)) continue;
-
-                    using (var cmd = new SqlCommand(trimmedBatch, conn))
-                    {
-                        cmd.ExecuteNonQuery();
-                    }
-                }
-
-                Log.Information("Database initialization completed successfully.");
-            }
-        }
     }
 
     /// <summary>

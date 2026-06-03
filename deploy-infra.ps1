@@ -5,6 +5,8 @@ $ErrorActionPreference = "Stop"
 # Setup variables for deployment
 # -----------------------------------------------------------------------------
 $TemplatePath = "C:\Source\AvalonPizza\base-stack.template"
+$NetworkType = "Public" # change to "Private" for production deployments
+$MyLocalIp = "24.212.173.78/32" # replace with your actual public IP address followed by /32 (CIDR notation) when deploying. This is required to allow access to the RDS instance if deploying in a public subnet, but is ignored if deploying in a private subnet
 
 # -----------------------------------------------------------------------------
 # Validate the CloudFormation template before proceeding
@@ -14,6 +16,7 @@ Write-Host "Validating CloudFormation template..." -ForegroundColor Cyan
 aws cloudformation validate-template --template-body "file://$TemplatePath"
 
 if ($LASTEXITCODE -ne 0) { Write-Error "Template validation failed."; exit 1 }
+
 Write-Host "Validation successful!" -ForegroundColor Green
 
 # -----------------------------------------------------------------------------
@@ -33,6 +36,8 @@ catch {
     exit 1
 }
 
+write-Host "AWS credentials verified successfully!" -ForegroundColor Green
+
 # -----------------------------------------------------------------------------
 # Build and deploy the CloudFormation stack
 # -----------------------------------------------------------------------------
@@ -47,7 +52,7 @@ aws cloudformation deploy `
   --stack-name "AvalonPizza-Base-Stack" `
   --capabilities CAPABILITY_IAM `
   --region "ca-central-1" `
-  --parameter-overrides "DbUser=$dbUser"
+  --parameter-overrides "DbUser=$dbUser" "NetworkType=$NetworkType" "MyLocalIp=$MyLocalIp"
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Deployment complete!" -ForegroundColor Green

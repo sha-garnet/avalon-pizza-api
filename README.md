@@ -1,77 +1,59 @@
 # 🍕 AvalonPizza Server API
 
-[![Build Status](https://img.shields.io/badge/.NET-10.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
-[![Database](https://img.shields.io/badge/Database-SQL%20Server-CC2927.svg?logo=microsoft-sql-server&logoColor=white)](https://www.microsoft.com/en-us/sql-server/)
+[![Build Status](https://img.shields.io/badge/.NET-8.0-512bd4.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![Cloud](https://img.shields.io/badge/Cloud-AWS-232F3E.svg?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
+[![IaC](https://img.shields.io/badge/IaC-CloudFormation-orange.svg?logo=amazon-aws&logoColor=white)](https://aws.amazon.com/cloudformation/)
+[![Config](https://img.shields.io/badge/SSM-Parameter_Store-232F3E.svg?logo=aws-systems-manager&logoColor=white)](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
+[![Database](https://img.shields.io/badge/RDS-SQL_Server-CC2927.svg?logo=amazon-rds&logoColor=white)](https://aws.amazon.com/rds/sqlserver/)
+[![ORM](https://img.shields.io/badge/ORM-Dapper-007ACC.svg?logo=dotnet&logoColor=white)](https://dapperlib.github.io/Dapper/)
+[![Migration](https://img.shields.io/badge/Migration-DbUp-007ACC.svg?logo=nuget&logoColor=white)](https://dbup.readthedocs.io/)
 [![Cache](https://img.shields.io/badge/Cache-Redis-DC382D.svg?logo=redis&logoColor=white)](https://redis.io/)
+[![Testing](https://img.shields.io/badge/Testing-xUnit-green.svg?logo=xunit&logoColor=white)]()
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20WSL2-0078D4.svg?logo=windows&logoColor=white)]()
-[![Unit Tests](https://img.shields.io/badge/Testing-xUnit-blue.svg?logo=xunit&logoColor=white)]()
-[![Mocking Framework](https://img.shields.io/badge/Mocking-Moq-green.svg)]()
 
-A high-performance REST API built with .NET 10 and Dapper, optimized for sub-millisecond data retrieval. By utilizing a Database-First architecture with pre-compiled Stored Procedures and Redis distributed caching, the system minimizes database round-trips and eliminates ORM overhead. Features custom middleware for mapping SQL-state exceptions to granular HTTP responses, ensuring enterprise-grade reliability and observability.
+A cloud-native REST API built with **.NET 8** and **Dapper**. By utilizing a Database-First architecture with pre-compiled Stored Procedures and Redis distributed caching, the system minimizes database round-trips and eliminates ORM overhead. This project demonstrates a serverless architecture, featuring automated infrastructure provisioning, decoupled schema migrations, and enterprise-grade observability.
+
+---
 
 ## 📌 Project Overview
-*   **Purpose:** A production-grade backend foundation for a scalable order management system, designed to demonstrate high-performance architectural patterns.
-*   **Key Focus:** Showcasing the synergy between modern **.NET 10** features and optimized **SQL Server** stored procedures.
-*   **Architecture:** Clean separation of concerns using the **Repository Pattern**, a dedicated **Service Layer**, and **Global Exception Middleware** for centralized error handling.
-*   **Data Strategy:** A high-speed **Dapper-based** approach utilizing User-Defined Table Types (UDTTs) to minimize database round-trips.
-*   **Primary Tech Stack:** C#, .NET 10, SQL Server, Redis, Docker Desktop (WSL 2).
+* **Purpose:** The foundations of a production-grade, serverless backend designed for a scalable order management system.
+* **Cloud-Native Focus:** Built to run natively on **AWS Serverless** infrastructure, leveraging **AWS Lambda** for compute and **RDS (SQL Server)** for managed relational data storage.
+* **Architecture:** Implements a decoupled, event-driven philosophy using a dedicated **Service Layer**, **Repository Pattern**, and **Global Exception Middleware** to ensure enterprise-grade reliability.
+* **Data Strategy:** Optimized for performance through **Dapper-based** micro-ORM patterns and **User-Defined Table Types (UDTTs)**, minimizing database round-trips and infrastructure latency.
+* **Automated Reliability:** Prioritizes "Infrastructure-as-Code" (IaC) and automated schema migration workflows to ensure consistent, repeatable deployments across development and production environments.
 
 ## 🛠️ Key Architectural Features
-*   **Distributed Caching:** Reduced DB load by caching static data (Toppings, Sizes, prices) in Redis.
-*   **Defensive SQL Layer:** Business logic encapsulated in Stored Procedures using `TRY/CATCH` blocks and custom `THROW` states for granular error reporting.
-*   **Atomic Transactions:** Ensures data consistency by utilizing SQL Transactions within stored procedures, guaranteeing that complex orders and topping mappings either succeed entirely or roll back safely.
-*   **Idempotent Schema Management:** Custom `DbInitializer` ensures database creation and seed scripts can be executed repeatedly without side effects or data duplication.
-*   **Health Monitoring:** Integrated Health Check API monitoring real-time connectivity for both SQL Server and Redis.
-*   **Structured Logging:** Configured via **Serilog** to provide high-visibility console output and rolling file logs with a 7-day retention policy for efficient troubleshooting.
+* **Infrastructure-as-Code:** 100% automated provisioning via **AWS CloudFormation**.
+* **Serverless Compute:** Optimized for **AWS Lambda**, providing a scalable, cost-effective hosting model.
+* **Decoupled Migration Engine:** Schema management and stored procedure versioning are extracted into a standalone **DbUp** project, enabling repeatable deployments.
+* **Security:** Credentials managed via **AWS SSM Parameter Store**; database instances isolated in a potential private subnets with VPC Endpoints.
+* **Defensive SQL Layer:** Business logic encapsulated in Stored Procedures with custom `THROW` states for granular error reporting.
+* **Observability:** Structured logging via **Serilog** and integrated Health Check endpoints for real-time monitoring.
 
+---
 
-## 🚀 Getting Started
+## 🚀 Deployment Strategy
+The system follows a two-tier CloudFormation strategy to ensure separation of concerns. Deployment is fully automated via PowerShell scripts:
 
-### Prerequisites
-*   **OS:** Windows 11 + **WSL 2** (Ubuntu).
-*   **Runtime:** [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
-*   **Containerization:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) (WSL 2 Backend enabled).
-*   **Database:** SQL Server (LocalDB or Express).
+| Script | Purpose | Template Path |
+| :--- | :--- | :--- |
+| `deploy-infra.ps1` | Provisions VPC, Private Subnets, RDS, and SSM endpoints. | `base-stack.template` |
+| `deploy-api.ps1` | Deploys Lambda functions and API Gateway. | `serverless.template` |
 
-### Environment Setup
-1.  **Spin up Redis:**
+### Automated Migrations
+The `AvalonPizza.Migrator` project ensures the database schema remains synchronized across environments:
+* **Development:** Targets `(localdb)\MSSQLLocalDB`.
+* **Production:** Targets AWS RDS, retrieving credentials securely from SSM.
 
-    ```bash
-    docker run --name avalon-redis -p 6379:6379 -d redis
-    ```
-2.  **Configure `appsettings.Development.json`:**
+---
 
-    ```json
-    {
-      "ConnectionStrings": {
-        "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=PizzaStoreDb;Trusted_Connection=True;TrustServerCertificate=True;",
-        "RedisConnection": "localhost:6379"
-      },
-      "ApiKeySettings": {
-        "ApiKey": "your-secret-key-here"
-      }
-    }
-    ```
-3.  **Log Directory:** Ensure the log directory exists on your machine (default: `C:\temp\log\`) or update the path in `appsettings.Development.json`.
+## 📖 API Documentation & Sandbox
+The API uses **OpenAPI/Swagger (via Swashbuckle)** to provide an interactive developer experience.
 
-    ```json
-    {
-      "LoggingPaths": {
-        "PizzaLog": "C:\\temp\\log\\pizza_api_.txt"
-      },
-      "ConnectionStrings": { ... }
-    }
-    ```
-
-### 📖 API Documentation & Sandbox
-
-The API is fully documented using **OpenAPI / Swagger (via Swashbuckle)**, parsing inline C# XML comments to reflect accurate payload schema models and operational HTTP response contracts.
-
-* 🏠 **Custom Landing Page:** Navigating to the root URL (`/`) provides a tailored view displaying API Documentation and System Health Status `http://localhost:<port>/health`.
-* 🌐 **Interactive Sandbox:** `http://localhost:<port>/swagger/index.html` (Available in Development mode)
+* 🏠 **Landing Page:** Health status and API documentation entry point at `/`.
+* 🌐 **Sandbox:** Swagger UI available at `/swagger/index.html` (Development only).
 
 ### Primary Endpoints
-
 | Method | Endpoint | SQL Procedure | Description |
 | :--- | :--- | :--- | :--- |
 | **GET** | `/api/toppings` | `usp_Toppings_GetAll` | Retrieves all active toppings and prices. Optimized with Redis caching. |
@@ -83,7 +65,6 @@ The API is fully documented using **OpenAPI / Swagger (via Swashbuckle)**, parsi
 | **DELETE** | `/api/orders/{id}` | `usp_Orders_Delete` | Performs a soft-delete (sets `IsActive = 0`). Only allowed if status is `Pending`. |
 
 ### 🚨 The "State" Dictionary (SQL Error Mapping)
-
 This table maps the custom SQL `THROW` states to their corresponding business logic and the recommended HTTP response codes.
 
 | SQL State | Logic Category | Description | Suggested HTTP Response |
@@ -94,12 +75,10 @@ This table maps the custom SQL `THROW` states to their corresponding business lo
 | **4** | **Validation** | Topping list is empty. Orders must have at least one topping. | `400 Bad Request` |
 | **5** | **Validation** | One or more `ToppingId` values provided do not exist in the database. | `400 Bad Request` |
 
+---
+
 ## 🧪 Testing Suite
+Built on **xUnit** and **Moq**, the test suite focuses on validating API boundaries without requiring an active database.
 
-The solution features an isolated unit test architecture built on **xUnit** and **Moq**, designed to validate API pipeline boundaries, route results, and service layer caching workflows without database context cross-contamination.
-
-### Key Testing Strategies Demonstrated:
-
-* 🛠️ **AAA Pattern (Arrange, Act, Assert):** Standardized, clean test files prioritizing strict setup readability.
-* 📦 **Cache-Aside Boundary Testing:** Ensures the service layer fetches from Redis on cache hits and falls back to infrastructure tables only during cache misses.
-* 🎭 **Mocking Injected Dependencies:** Utilizing `Mock<T>` to isolate structural controllers from operational dependencies (`ILogger`, `IMapper`, or internal services).
+* 🛠️ **AAA Pattern:** Strict Arrange-Act-Assert structure for readability.
+* 🎭 **Mocking:** Uses `Mock<T>` to isolate controllers from operational dependencies (`ILogger`, `IMapper`).
